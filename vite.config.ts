@@ -65,6 +65,11 @@ const config = defineConfig(async ({ command, mode }) => {
         // target: `http://${process.env.RPCNODES_SERVICE_HOST}:${process.env.RPCNODES_SERVICE_PORT_RPC}`,
         target: 'https://devnet.rpc.agoric.net',
       },
+      '^/rest/.*': {
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/rest*/g, ''),
+        target: `http://${process.env.RPCNODES_SERVICE_HOST}:${process.env.RPCNODES_SERVICE_PORT_SIDEKICK}`,
+      },
     },
     strictPort: true,
   };

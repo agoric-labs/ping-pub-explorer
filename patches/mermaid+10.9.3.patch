@@ -1,0 +1,21 @@
+diff --git a/node_modules/mermaid/dist/sequenceDiagram-704730f1.js b/node_modules/mermaid/dist/sequenceDiagram-704730f1.js
+index 1263928..59a9afc 100644
+--- a/node_modules/mermaid/dist/sequenceDiagram-704730f1.js
++++ b/node_modules/mermaid/dist/sequenceDiagram-704730f1.js
+@@ -1682,0 +1682,4 @@     }
++
++    if (textData.sequenceIndex)
++      textElem.attr("messageNumber", textData.sequenceIndex);
++
+diff --git a/node_modules/mermaid/dist/sequenceDiagram-704730f1.js b/node_modules/mermaid/dist/sequenceDiagram-704730f1.js
+index 1263928..59a9afc 100644
+--- a/node_modules/mermaid/dist/sequenceDiagram-704730f1.js
++++ b/node_modules/mermaid/dist/sequenceDiagram-704730f1.js
+@@ -2421,0 +2421,1 @@   textObj.tspan = false;
++  textObj.sequenceIndex = sequenceIndex;
+diff --git a/node_modules/mermaid/dist/sequenceDiagram-704730f1.js b/node_modules/mermaid/dist/sequenceDiagram-704730f1.js
+index 1263928..59a9afc 100644
+--- a/node_modules/mermaid/dist/sequenceDiagram-704730f1.js
++++ b/node_modules/mermaid/dist/sequenceDiagram-704730f1.js
+@@ -2459,0 +2459,1 @@   line.style("fill", "none");
++  line.attr("messageLineNumber", sequenceIndex);
