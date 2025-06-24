@@ -39,10 +39,12 @@ const voterStatusMap: Record<string, string> = {
 
 const proposalInfo = ref();
 
-function metaItem(metadata: string|undefined): { title: string; summary: string } {
-  return metadata ? JSON.parse(metadata) : {}
+function metaItem(metadata: string | undefined): {
+  title: string;
+  summary: string;
+} {
+  return metadata ? JSON.parse(metadata) : {};
 }
-
 </script>
 <template>
   <div class="bg-white dark:bg-[#28334e] rounded text-sm">
@@ -64,13 +66,17 @@ function metaItem(metadata: string|undefined): { title: string; summary: string 
                 :to="`/${chain.chainName}/gov/${item?.proposal_id}`"
                 class="text-main text-base mb-1 block hover:text-indigo-400 truncate"
               >
-                {{ item?.content?.title || item?.title || metaItem(item?.metadata)?.title }}
+                {{
+                  item?.content?.title ||
+                  item?.title ||
+                  metaItem(item?.metadata)?.title
+                }}
               </RouterLink>
               <div
                 v-if="item.content"
                 class="bg-[#f6f2ff] text-[#9c6cff] dark:bg-gray-600 dark:text-gray-300 inline-block rounded-full px-2 py-[1px] text-xs mb-1"
               >
-                {{ showType(item.content['@type']) }} 
+                {{ showType(item.content['@type']) }}
               </div>
             </div>
           </td>
@@ -88,8 +94,8 @@ function metaItem(metadata: string|undefined): { title: string; summary: string 
                   statusMap?.[item?.status] === 'PASSED'
                     ? 'text-yes'
                     : statusMap?.[item?.status] === 'REJECTED'
-                    ? 'text-no'
-                    : 'text-info'
+                      ? 'text-no'
+                      : 'text-info'
                 "
               >
                 <div
@@ -98,8 +104,8 @@ function metaItem(metadata: string|undefined): { title: string; summary: string 
                     statusMap?.[item?.status] === 'PASSED'
                       ? 'bg-yes'
                       : statusMap?.[item?.status] === 'REJECTED'
-                      ? 'bg-no'
-                      : 'bg-info'
+                        ? 'bg-no'
+                        : 'bg-info'
                   "
                 ></div>
                 <div class="text-xs">
@@ -149,7 +155,11 @@ function metaItem(metadata: string|undefined): { title: string; summary: string 
           <RouterLink
             :to="`/${chain.chainName}/gov/${item?.proposal_id}`"
             class="flex-1 w-0 truncate mr-4"
-            >{{ item?.content?.title || item?.title || metaItem(item?.metadata)?.title }}</RouterLink
+            >{{
+              item?.content?.title ||
+              item?.title ||
+              metaItem(item?.metadata)?.title
+            }}</RouterLink
           >
           <label
             for="proposal-detail-modal"
@@ -192,8 +202,8 @@ function metaItem(metadata: string|undefined): { title: string; summary: string 
                 statusMap?.[item?.status] === 'PASSED'
                   ? 'text-yes'
                   : statusMap?.[item?.status] === 'REJECTED'
-                  ? 'text-no'
-                  : 'text-info'
+                    ? 'text-no'
+                    : 'text-info'
               "
             >
               <div
@@ -202,8 +212,8 @@ function metaItem(metadata: string|undefined): { title: string; summary: string 
                   statusMap?.[item?.status] === 'PASSED'
                     ? 'bg-yes'
                     : statusMap?.[item?.status] === 'REJECTED'
-                    ? 'bg-no'
-                    : 'bg-info'
+                      ? 'bg-no'
+                      : 'bg-info'
                 "
               ></div>
               <div class="text-xs flex items-center">
@@ -225,7 +235,6 @@ function metaItem(metadata: string|undefined): { title: string; summary: string 
 
               <span v-else>Vote</span></label
             >
-           
           </div>
         </div>
       </div>
@@ -242,9 +251,24 @@ function metaItem(metadata: string|undefined): { title: string; summary: string 
         <h3 class="font-bold text-lg">Description</h3>
         <p class="py-4">
           <Component
-            v-if="proposalInfo?.content?.description || proposalInfo?.summary || metaItem(proposalInfo?.metadata)?.summary"
-            :is="select(proposalInfo?.content?.description || proposalInfo?.summary || metaItem(proposalInfo?.metadata)?.summary, 'horizontal')"
-            :value="proposalInfo?.content?.description || proposalInfo?.summary || metaItem(proposalInfo?.metadata)?.summary"
+            v-if="
+              proposalInfo?.content?.description ||
+              proposalInfo?.summary ||
+              metaItem(proposalInfo?.metadata)?.summary
+            "
+            :is="
+              select(
+                proposalInfo?.content?.description ||
+                  proposalInfo?.summary ||
+                  metaItem(proposalInfo?.metadata)?.summary,
+                'horizontal'
+              )
+            "
+            :value="
+              proposalInfo?.content?.description ||
+              proposalInfo?.summary ||
+              metaItem(proposalInfo?.metadata)?.summary
+            "
           >
           </Component>
         </p>
