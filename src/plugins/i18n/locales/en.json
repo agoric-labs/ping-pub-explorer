@@ -91,7 +91,10 @@
     "block-height-input-label": "Block height",
     "end-time-input-label": "End Time",
     "fetch-button-label": "Fetch",
-    "start-time-input-label": "Start Time"
+    "next-page-button-label": "Next Page",
+    "previous-page-button-label": "Previous Page",
+    "start-time-input-label": "Start Time",
+    "visualize-block-label": "Visualize"
   },
   "consensus": {
     "monitor": "Monitor",

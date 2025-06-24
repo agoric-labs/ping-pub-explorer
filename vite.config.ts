@@ -11,6 +11,7 @@ import DefineOptions from 'unplugin-vue-define-options/vite';
 import { type CommonServerOptions, defineConfig } from 'vite';
 import Pages from 'vite-plugin-pages';
 import Layouts from 'vite-plugin-vue-layouts';
+import svgLoader from 'vite-svg-loader';
 
 import colors from './colors';
 
@@ -101,6 +102,7 @@ const config = defineConfig(async ({ command, mode }) => {
         dirs: [`${__dirname}/src/modules`, `${__dirname}/src/pages`],
         exclude: ['**/*.ts'], // only load .vue as modules
       }),
+      svgLoader(),
       vue({
         template: {
           compilerOptions: {

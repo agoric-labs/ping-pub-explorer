@@ -1,13 +1,14 @@
 <script lang="ts" setup>
-import { onMounted, ref, watchEffect } from 'vue';
-import { Icon } from '@iconify/vue';
-import TxsElement from '@/components/dynamic/TxsElement.vue';
-import DynamicComponent from '@/components/dynamic/DynamicComponent.vue';
-import { computed } from '@vue/reactivity';
+import { ref } from 'vue';
 import { onBeforeRouteUpdate } from 'vue-router';
+
+import Countdown from '@/components/Countdown.vue';
+import DynamicComponent from '@/components/dynamic/DynamicComponent.vue';
+import TxsElement from '@/components/dynamic/TxsElement.vue';
 import { useBaseStore, useFormatter } from '@/stores';
 import type { Block } from '@/types';
-import Countdown from '@/components/Countdown.vue';
+import { Icon } from '@iconify/vue';
+import { computed } from '@vue/reactivity';
 
 const props = defineProps(['height', 'chain']);
 
@@ -61,6 +62,7 @@ onBeforeRouteUpdate(async (to, from, next) => {
   }
 });
 </script>
+
 <template>
   <div>
     <div v-if="isFutureBlock" class="text-center">
@@ -87,21 +89,19 @@ onBeforeRouteUpdate(async (to, from, next) => {
                   <h3 class="text-lg font-bold">
                     {{ $t('block.countdown_for_block_input') }}
                   </h3>
-                  <p class="py-4">
-                    <div class="join">
-                      <input
-                        class="input input-bordered join-item"
-                        v-model="newHeight"
-                        type="number"
-                      />
-                      <button
-                        class="btn btn-primary join-item"
-                        @click="updateTarget()"
-                      >
-                        {{ $t('block.btn_update') }}
-                      </button>
-                    </div>
-                  </p>
+                  <div class="py-4 join">
+                    <input
+                      class="input input-bordered join-item"
+                      v-model="newHeight"
+                      type="number"
+                    />
+                    <button
+                      class="btn btn-primary join-item"
+                      @click="updateTarget()"
+                    >
+                      {{ $t('block.btn_update') }}
+                    </button>
+                  </div>
                 </td>
               </tr>
               <tr>
@@ -125,10 +125,18 @@ onBeforeRouteUpdate(async (to, from, next) => {
         </div>
       </div>
     </div>
+
     <div v-else>
       <div class="bg-base-100 px-4 pt-3 pb-4 rounded mb-4 shadow">
         <h2 class="card-title flex flex-row justify-between">
           <p class="">#{{ current.block?.header?.height }}</p>
+          <RouterLink
+            :to="`/${store.blockchain.chainName}/causeway?blockHeight=${height}`"
+            class="btn btn-primary btn-sm p-1"
+            v-if="props.height"
+          >
+            {{ $t('causeway.visualize-block-label') }}
+          </RouterLink>
           <div class="flex" v-if="props.height">
             <RouterLink
               :to="`/${store.blockchain.chainName}/block/${height - 1}`"

@@ -32,9 +32,8 @@ export type Vat = {
   time: number;
 };
 
-type ChunkFilters = { offset: number; limit: number };
-
 const API_BASE = '/rest/causeway';
+const EXTRACT_VAT_ID_REGEX = /^v([0-9]*)$/;
 
 export const useCauseway = defineStore('causeway', {
   actions: {
@@ -56,7 +55,15 @@ export const useCauseway = defineStore('causeway', {
             }),
       ]);
 
-      this.$state.data = { interactions, interactionsCount, vats };
+      this.$state.data = {
+        interactions,
+        interactionsCount,
+        vats: vats.sort(
+          ({ vatID: firstVatID }, { vatID: secondVatID }) =>
+            Number(EXTRACT_VAT_ID_REGEX.exec(firstVatID)![1]) -
+            Number(EXTRACT_VAT_ID_REGEX.exec(secondVatID)![1])
+        ),
+      };
       this.$state.status = LoadingStatus.Loaded;
     },
     loadInteractions: async (filters: Filters) => {

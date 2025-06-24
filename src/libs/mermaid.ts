@@ -8,9 +8,7 @@ const MESSAGE_NUMBER_ATTRIBUTE_NAME = 'messagenumber';
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
 const addParticipantTooltips = (
-  currentPage: number,
   interactions: Array<Interaction>,
-  interactionsPerPage: number,
   svg: SVGSVGElement
 ) => {
   const messageTooltipMap: { [key: string]: SVGGElement } = {};
@@ -18,7 +16,11 @@ const addParticipantTooltips = (
     .querySelectorAll<SVGTextElement>('text[class="messageText"]')
     .forEach((textElement) => {
       textElement.style.removeProperty('font-size');
-      textElement.classList.add('!dark:fill-gray-300', '!fill-gray-500', 'text-xs');
+      textElement.classList.add(
+        '!dark:fill-gray-300',
+        '!fill-gray-500',
+        'text-xs'
+      );
     });
 
   svg
@@ -29,10 +31,7 @@ const addParticipantTooltips = (
         LINE_NUMBER_ATTRIBUTE_NAME
       )!;
 
-      const interaction =
-        interactions[
-          currentPage * interactionsPerPage + Number(messageNumber) - 1
-        ];
+      const interaction = interactions[Number(messageNumber) - 1];
       if (!interaction?.crankNum) return;
 
       const horizontalPadding = 6;
@@ -111,6 +110,16 @@ const addParticipantTooltips = (
         () => (toolTip.style.opacity = '0')
       );
     });
+
+  svg
+    .getElementById('arrowhead')
+    .children.item(0)
+    ?.classList.add(
+      '!dark:fill-gray-300',
+      '!dark:stroke-gray-300',
+      '!fill-gray-500',
+      '!stroke-gray-500'
+    );
 
   const actorRects = svg.querySelectorAll('rect.actor, .labelBox');
   const actorLabels = svg.querySelectorAll('.actor, .labelText');
@@ -432,28 +441,20 @@ const generateSinglePageDiagram = (
 };
 
 type RenderDiagramArgs = {
-  currentPage: number;
+  code: string;
   interactions: Array<Interaction>;
-  interactionsPerPage: number;
   mermaidRef: Ref<HTMLDivElement | null>;
-  pages: string[];
 };
 
 export const renderDiagram = async ({
-  currentPage,
+  code,
   interactions,
-  interactionsPerPage,
   mermaidRef,
-  pages,
 }: RenderDiagramArgs) => {
-  if (!(pages.length && mermaidRef.value)) return;
+  if (!(code && mermaidRef.value)) return;
 
   try {
-    const { svg } = await mermaid.render(
-      'mermaid-svg',
-      pages[currentPage],
-      mermaidRef.value
-    );
+    const { svg } = await mermaid.render('mermaid-svg', code, mermaidRef.value);
     mermaidRef.value.innerHTML = svg;
 
     const svgElement = mermaidRef.value.querySelector('svg');
@@ -463,12 +464,7 @@ export const renderDiagram = async ({
       svgElement.style.minWidth = svgElement.style.maxWidth;
 
       fixAlignments(svgElement);
-      addParticipantTooltips(
-        currentPage,
-        interactions,
-        interactionsPerPage,
-        svgElement
-      );
+      addParticipantTooltips(interactions, svgElement);
     }
   } catch (error) {
     const errorMessage = (error as Error).message;

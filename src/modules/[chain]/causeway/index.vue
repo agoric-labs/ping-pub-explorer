@@ -47,6 +47,7 @@ import { storeToRefs } from 'pinia';
 import { computed, onMounted, ref, watch } from 'vue';
 import { type LocationQuery, useRoute, useRouter } from 'vue-router';
 
+import LoadingIcon from '@/icons/loading.svg';
 import { generateMermaidSequenceDiagram, renderDiagram } from '@/libs/mermaid';
 import { useCauseway } from '@/stores/useCauseway';
 import { LoadingStatus } from '@/stores/useDashboard';
@@ -105,23 +106,23 @@ const applyFilters = (currentPage = 0) =>
     },
   });
 
-const loadData = (loadCount: boolean, query: LocationQuery) =>
+const loadData = (loadCount: boolean, query: LocationQuery) => {
+  const endTimestamp = getTimestampFromDate(String(query.endTime || ''));
+  const startTimestamp = getTimestampFromDate(String(query.startTime || ''));
+
   causeway.loadData(
     {
       blockHeight: String(query.blockHeight || '').match(IS_NUMBER_REGEX)
         ? Number(blockHeight.value)
         : 0,
       currentPage: currentPage.value,
-      endTime: isNaN(getTimestampFromDate(String(query.endTime || '')))
-        ? ''
-        : endTime.value,
+      endTime: isNaN(endTimestamp) ? '' : String(endTimestamp / 1000),
       limit: INTERACTIONS_PER_PAGE,
-      startTime: isNaN(getTimestampFromDate(String(query.startTime || '')))
-        ? ''
-        : startTime.value,
+      startTime: isNaN(startTimestamp) ? '' : String(startTimestamp / 1000),
     },
     loadCount
   );
+};
 
 onMounted(
   () =>
@@ -132,6 +133,10 @@ onMounted(
 watch(
   status,
   (newStatus) => {
+    if (newStatus === LoadingStatus.Loading)
+      document.body.classList.add('h-screen', 'overflow-hidden');
+    else document.body.classList.remove('h-screen', 'overflow-hidden');
+
     if (newStatus !== LoadingStatus.Loaded) return;
     const code = generateMermaidSequenceDiagram(
       data.value.interactions,
@@ -139,11 +144,9 @@ watch(
       INTERACTIONS_PER_PAGE
     );
     renderDiagram({
-      currentPage: 0,
       interactions: data.value.interactions,
-      interactionsPerPage: INTERACTIONS_PER_PAGE,
       mermaidRef,
-      pages: [code],
+      code,
     });
   },
   { deep: true }
@@ -164,6 +167,13 @@ watch(
 
 <template>
   <div class="flex flex-col gap-y-4 h-full w-full">
+    <div
+      class="absolute bg-base-200 flex h-screen inset-0 items-center justify-center opacity-60 w-screen"
+      style="z-index: 100"
+      v-if="status === LoadingStatus.Loading"
+    >
+      <LoadingIcon class="animate-spin fill-primary h-8 w-8" />
+    </div>
     <div class="flex flex-col gap-y-2 items-center w-full">
       <div class="flex gap-x-3 items-center w-full">
         <div
@@ -198,7 +208,7 @@ watch(
         @click="() => currentPage && applyFilters(currentPage - 1)"
         :disabled="!currentPage"
       >
-        ← Previous Page
+        {{ `← ${$t(`${LOCALE_PREFIX}.previous-page-button-label`)}` }}
       </button>
       <span className="font-bold px-4">
         {{ `Page ${currentPage + 1} of ${totalPages}` }}
@@ -210,7 +220,7 @@ watch(
         "
         :disabled="currentPage === totalPages - 1"
       >
-        Next Page →
+        {{ `${$t(`${LOCALE_PREFIX}.next-page-button-label`)} →` }}
       </button>
     </div>
 
