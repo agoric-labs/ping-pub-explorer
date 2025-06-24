@@ -65,7 +65,9 @@ export interface ChainConfig {
   features?: string[];
   endpoints: {
     rest?: Endpoint[];
+    restDirect?: Endpoint[];
     rpc?: Endpoint[];
+    rpcDirect?: Endpoint[];
     grpc?: Endpoint[];
   };
   logo: string;
@@ -99,6 +101,7 @@ export interface LocalConfig {
   consensus_prefix?: string;
   alias: string;
   api: string[] | Endpoint[];
+  apiDirect?: string[] | Endpoint[];
   grpc: Endpoint[];
   provider_chain: {
     api: string[] | Endpoint[];
@@ -116,6 +119,7 @@ export interface LocalConfig {
   theme_color?: string;
   min_tx_fee: string;
   rpc: string[] | Endpoint[];
+  rpcDirect?: string[] | Endpoint[];
   sdk_version: string;
   registry_name?: string;
   features?: string[];
@@ -177,7 +181,9 @@ export function fromLocal(lc: LocalConfig): ChainConfig {
   conf.prettyName = lc.registry_name || lc.chain_name;
   conf.endpoints = {
     rest: apiConverter(lc.api),
+    restDirect: apiConverter(lc.apiDirect || lc.api),
     rpc: apiConverter(lc.rpc),
+    rpcDirect: apiConverter(lc.rpcDirect || lc.rpc),
     grpc: apiConverter(lc.grpc),
   };
   if (lc.provider_chain) {
@@ -186,9 +192,7 @@ export function fromLocal(lc: LocalConfig): ChainConfig {
     };
   }
   conf.features = lc.features;
-  conf.logo = lc.logo.startsWith('http')
-    ? lc.logo
-    : `https://ping.pub${lc.logo}`;
+  conf.logo = lc.logo;
   conf.keplrFeatures = lc.keplr_features;
   conf.keplrPriceStep = lc.keplr_price_step;
   conf.themeColor = lc.theme_color;

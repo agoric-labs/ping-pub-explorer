@@ -12,7 +12,7 @@ import { type CommonServerOptions, defineConfig } from 'vite';
 import Pages from 'vite-plugin-pages';
 import Layouts from 'vite-plugin-vue-layouts';
 import svgLoader from 'vite-svg-loader';
-
+//@ts-ignore
 import colors from './colors';
 
 interface Asset {
@@ -57,14 +57,12 @@ const config = defineConfig(async ({ command, mode }) => {
       '^/api/.*': {
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api*/g, ''),
-        // target: `http://${process.env.RPCNODES_SERVICE_HOST}:${process.env.RPCNODES_SERVICE_PORT_API}`,
-        target: 'https://devnet.api.agoric.net',
+        target: `http://${process.env.RPCNODES_SERVICE_HOST}:${process.env.RPCNODES_SERVICE_PORT_API}`,
       },
       '^/rpc/.*': {
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/rpc*/g, ''),
-        // target: `http://${process.env.RPCNODES_SERVICE_HOST}:${process.env.RPCNODES_SERVICE_PORT_RPC}`,
-        target: 'https://devnet.rpc.agoric.net',
+        target: `http://${process.env.RPCNODES_SERVICE_HOST}:${process.env.RPCNODES_SERVICE_PORT_RPC}`,
       },
       '^/rest/.*': {
         changeOrigin: true,

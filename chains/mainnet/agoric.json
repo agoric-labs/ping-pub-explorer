@@ -8,7 +8,7 @@
             "base": "ubld",
             "coingecko_id": "agoric",
             "exponent": "6",
-            "logo": "/logos/agoric-bld.svg",
+            "logo": "/agoric-bld.svg",
             "symbol": "BLD"
         },
         {
@@ -22,7 +22,7 @@
     "chain_name": "agoric",
     "coin_type": "564",
     "coingecko": "agoric",
-    "logo": "/logos/agoric.png",
+    "logo": "/agoric.png",
     "min_tx_fee": "8000",
     "rpc": [
         "http://localhost:8000/rpc"

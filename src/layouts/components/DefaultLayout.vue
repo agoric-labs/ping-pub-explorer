@@ -90,7 +90,7 @@ const show_ad = computed(() => {
     >
       <div class="flex justify-between mt-1 pl-4 py-4 mb-1">
         <RouterLink to="/" class="flex items-center">
-          <img class="w-10 h-10" src="../../assets/logo.svg" />
+          <img class="w-10 h-10" src="/logo.svg" />
           <h1 class="flex-1 ml-3 text-2xl font-semibold dark:text-white">
             Ping.pub
           </h1>

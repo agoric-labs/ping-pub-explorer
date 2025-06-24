@@ -1,12 +1,9 @@
 <script lang="ts" setup>
-import PaginationBar from '@/components/PaginationBar.vue';
-import { useBlockchain, useFormatter } from '@/stores';
+import { useBlockchain } from '@/stores';
 import { PageRequest, type Connection, type Pagination } from '@/types';
-import { computed, onMounted } from 'vue';
+import { onMounted } from 'vue';
 import { ref } from 'vue';
 
-import ChainRegistryClient from '@ping-pub/chain-registry-client';
-import type { IBCPath } from '@ping-pub/chain-registry-client/dist/types';
 import router from '@/router';
 import { useIBCModule } from './connStore';
 
@@ -25,13 +22,21 @@ onMounted(() => {
 
 function pageload(p: number) {
   pageRequest.value.setPage(p);
-  chainStore.rpc.getIBCConnections(pageRequest.value).then((x) => {
-    list.value = x.connections;
-    pageResponse.value = x.pagination;
-    if (x.pagination.total && Number(x.pagination.total) > 0) {
-      ibcStore.showConnection(0);
-    }
-  });
+  router
+    .isReady()
+    .then(() => chainStore.rpc.getIBCConnections(pageRequest.value))
+    .then((x) => {
+      list.value = x.connections;
+      pageResponse.value = x.pagination;
+      if (
+        router.currentRoute.value.path.match(
+          new RegExp(`^/${props.chain}/ibc/connection$`)
+        ) &&
+        x.pagination.total &&
+        Number(x.pagination.total) > 0
+      )
+        ibcStore.showConnection(0);
+    });
 }
 </script>
 <template>

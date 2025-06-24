@@ -16,10 +16,11 @@ onMounted(() => {
 });
 async function initParamsForKeplr() {
   const chain = selected.value;
-  if (!chain.endpoints?.rest?.at(0)) throw new Error('Endpoint does not set');
-  const client = CosmosRestClient.newDefault(
-    chain.endpoints.rest?.at(0)?.address || ''
-  );
+  const restEndpoint =
+    chain.endpoints?.restDirect?.at(0)?.address ||
+    chain.endpoints?.rest?.at(0)?.address;
+  if (!restEndpoint) throw new Error('Endpoint does not set');
+  const client = CosmosRestClient.newDefault(restEndpoint);
   const b = await client.getBaseBlockLatest();
   const chainid = b.block.header.chain_id;
 
@@ -36,8 +37,10 @@ async function initParamsForKeplr() {
     {
       chainId: chainid,
       chainName: chain.chainName,
-      rpc: chain.endpoints?.rpc?.at(0)?.address,
-      rest: chain.endpoints?.rest?.at(0)?.address,
+      rpc:
+        chain.endpoints?.rpcDirect?.at(0)?.address ||
+        chain.endpoints?.rpc?.at(0)?.address,
+      rest: restEndpoint,
       bip44: {
         coinType: Number(chain.coinType),
       },

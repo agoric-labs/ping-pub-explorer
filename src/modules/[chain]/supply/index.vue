@@ -85,8 +85,8 @@ function pageload(p: number) {
           amount: format
             .tokenAmountNumber({ amount: coin.amount, denom: denom })
             .toString(),
-          base: asset.base || coin.denom,
-          info: asset.display || coin.denom,
+          base: asset?.base || coin.denom,
+          info: asset?.display || coin.denom,
           logo:
             asset?.logo_URIs?.svg ||
             asset?.logo_URIs?.png ||

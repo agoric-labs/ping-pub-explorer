@@ -1,7 +1,7 @@
 import mermaid from 'mermaid';
-import { type Ref } from 'vue';
+import type { Ref } from 'vue';
 
-import { type Interaction, type Vat } from '@/stores/useCauseway';
+import type { Interaction, Vat } from '@/stores/useCauseway';
 
 const LINE_NUMBER_ATTRIBUTE_NAME = 'messagelinenumber';
 const MESSAGE_NUMBER_ATTRIBUTE_NAME = 'messagenumber';
