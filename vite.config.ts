@@ -1,4 +1,5 @@
-import { type Dirent, readdirSync } from 'node:fs';
+import { readdirSync } from 'node:fs';
+import type { Dirent } from 'node:fs';
 import { readFile, writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import { fileURLToPath, URL } from 'node:url';
@@ -8,7 +9,8 @@ import vue from '@vitejs/plugin-vue';
 import vueJsx from '@vitejs/plugin-vue-jsx';
 import AutoImport from 'unplugin-auto-import/vite';
 import DefineOptions from 'unplugin-vue-define-options/vite';
-import { type CommonServerOptions, defineConfig } from 'vite';
+import { defineConfig } from 'vite';
+import type { CommonServerOptions, UserConfigFnPromise } from 'vite';
 import Pages from 'vite-plugin-pages';
 import Layouts from 'vite-plugin-vue-layouts';
 import svgLoader from 'vite-svg-loader';
@@ -42,7 +44,7 @@ const ENCODING = 'utf-8';
 
 const __dirname = dirname(__fileName);
 
-const config = defineConfig(async ({ command, mode }) => {
+const configCreator: UserConfigFnPromise = async ({ command, mode }) => {
   const isNotBuildMode = !(command === 'build' && mode === 'production');
 
   if (!process.env.PORT && isNotBuildMode)
@@ -57,17 +59,23 @@ const config = defineConfig(async ({ command, mode }) => {
       '^/api/.*': {
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api*/g, ''),
-        target: `http://${process.env.RPCNODES_SERVICE_HOST}:${process.env.RPCNODES_SERVICE_PORT_API}`,
+        target:
+          process.env.API_ENDPOINT ||
+          `http://${process.env.RPCNODES_SERVICE_HOST}:${process.env.RPCNODES_SERVICE_PORT_API}`,
       },
       '^/rpc/.*': {
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/rpc*/g, ''),
-        target: `http://${process.env.RPCNODES_SERVICE_HOST}:${process.env.RPCNODES_SERVICE_PORT_RPC}`,
+        target:
+          process.env.RPC_ENDPOINT ||
+          `http://${process.env.RPCNODES_SERVICE_HOST}:${process.env.RPCNODES_SERVICE_PORT_RPC}`,
       },
       '^/rest/.*': {
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/rest*/g, ''),
-        target: `http://${process.env.RPCNODES_SERVICE_HOST}:${process.env.RPCNODES_SERVICE_PORT_SIDEKICK}`,
+        target:
+          process.env.REST_ENDPOINT ||
+          `http://${process.env.RPCNODES_SERVICE_HOST}:${process.env.RPCNODES_SERVICE_PORT_SIDEKICK}`,
       },
     },
     strictPort: true,
@@ -133,7 +141,7 @@ const config = defineConfig(async ({ command, mode }) => {
     },
     server: serverConfig,
   };
-});
+};
 
 const updatePortsInChainConfig = async ({ name, path }: Dirent) => {
   const filePath = `${path}/${name}`;
@@ -160,5 +168,7 @@ const updatePortsInChainConfigs = () => {
     chains.filter((entry) => entry.isFile()).map(updatePortsInChainConfig)
   );
 };
+
+const config = defineConfig(configCreator);
 
 export default config;

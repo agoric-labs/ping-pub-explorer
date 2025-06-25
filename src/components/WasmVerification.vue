@@ -209,10 +209,7 @@ function callFunction(title: string, method: string, arg: Argument) {
         data-tip="Powered By WELLDONE Studio"
       >
         <div class="w-8 rounded">
-          <img
-            src="../assets/images/welldone-logo.svg"
-            alt="Powered By WELLDONE Studio"
-          />
+          <img alt="Powered By WELLDONE Studio" src="/welldone-logo.svg" />
         </div>
       </a>
       <a

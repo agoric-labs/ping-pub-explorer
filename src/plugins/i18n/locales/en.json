@@ -92,6 +92,8 @@
     "end-time-input-label": "End Time",
     "fetch-button-label": "Fetch",
     "next-page-button-label": "Next Page",
+    "no-data-found-message": "No data found. Try updating your query",
+    "page-size-input-label": "Page Size",
     "previous-page-button-label": "Previous Page",
     "start-time-input-label": "Start Time",
     "visualize-block-label": "Visualize"

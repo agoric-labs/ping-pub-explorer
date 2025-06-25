@@ -1,6 +1,12 @@
 import mermaid from 'mermaid';
 import type { Ref } from 'vue';
 
+import {
+  CAUSEWAY_DEFAULT_PAGE_SIZE,
+  CAUSEWAY_MAXIMUM_PAGE_SIZE,
+  IS_NUMBER_REGEX,
+  MERMAID_CONTAINER_PADDING,
+} from '@/constants';
 import type { Interaction, Vat } from '@/stores/useCauseway';
 
 const LINE_NUMBER_ATTRIBUTE_NAME = 'messagelinenumber';
@@ -235,9 +241,7 @@ const generateInteractions = (interactions: Interaction[], vats: Vat[]) => {
   let result = '';
 
   const vatIds = new Set();
-  vats.forEach((vat) => {
-    vatIds.add(vat.vatID);
-  });
+  vats.forEach((vat) => vatIds.add(vat.vatID));
 
   interactions.forEach((interaction, index) => {
     const {
@@ -336,75 +340,26 @@ const generateInteractions = (interactions: Interaction[], vats: Vat[]) => {
 
 const getMermaidId = (vatId: string) => `Vat_${vatId.replace(/[^\w]/g, '_')}`;
 
-export const getSanitizedInteractionsPerPage = (
-  interactionsPerPage: string | null
-) => Math.max(5, Math.min(50, Number(interactionsPerPage) || 20));
+export const getSanitizedPageSize = (pageSize: string) =>
+  Math.min(
+    CAUSEWAY_MAXIMUM_PAGE_SIZE,
+    String(pageSize || '').match(IS_NUMBER_REGEX)
+      ? Number(pageSize)
+      : CAUSEWAY_DEFAULT_PAGE_SIZE
+  );
 
 export const generateMermaidSequenceDiagram = (
   interactions: Interaction[],
-  vats: Vat[],
-  maxInteractionsPerPage: number = 20
+  vats: Vat[]
 ) => {
-  if (!interactions || interactions.length === 0) {
-    return `sequenceDiagram
-    Note over System: No interactions found in the selected time range`;
-  }
-
   interactions.sort((a, b) => a.time - b.time);
-  const totalPages = Math.ceil(interactions.length / maxInteractionsPerPage);
 
-  if (totalPages <= 1) {
-    return generateSinglePageDiagram(interactions, vats);
-  }
+  let diagram = 'sequenceDiagram\n';
 
-  const pages: Interaction[][] = [];
-  for (let i = 0; i < totalPages; i++) {
-    const startIdx = i * maxInteractionsPerPage;
-    const endIdx = Math.min(
-      (i + 1) * maxInteractionsPerPage,
-      interactions.length
-    );
-    pages.push(interactions.slice(startIdx, endIdx));
-  }
+  diagram += generateParticipants(interactions, vats);
+  diagram += generateInteractions(interactions, vats);
 
-  const diagrams = pages.map((pageInteractions, pageIndex) => {
-    const fromTime = new Date(
-      pageInteractions[0].time *
-        (pageInteractions[0].time > 10000000000 ? 1 : 1000)
-    )
-      .toISOString()
-      .replace('T', ' ')
-      .substring(0, 19);
-    const toTime = new Date(
-      pageInteractions[pageInteractions.length - 1].time *
-        (pageInteractions[pageInteractions.length - 1].time > 10000000000
-          ? 1
-          : 1000)
-    )
-      .toISOString()
-      .replace('T', ' ')
-      .substring(0, 19);
-
-    let diagram = 'sequenceDiagram\n';
-
-    diagram += generateParticipants(interactions, vats);
-
-    // But only add the interactions for this specific page
-    diagram += generateInteractions(pageInteractions, vats);
-
-    // If this page has no interactions for a particular vat, add a note
-    if (pageInteractions.length === 0) {
-      diagram += '    Note over System: No interactions on this page\n';
-    } else if (pageInteractions.length < 3) {
-      // For pages with very few interactions, add a note to make the diagram more readable
-      diagram += `    Note over System: Limited interactions on this page (${pageInteractions.length})\n`;
-    }
-
-    return diagram;
-  });
-
-  // Join with a special delimiter that we'll use to split the diagrams later
-  return diagrams.join('\n%%DIAGRAM_PAGE_BREAK%%\n');
+  return diagram;
 };
 
 const generateParticipants = (
@@ -428,26 +383,16 @@ const generateParticipants = (
   return result;
 };
 
-const generateSinglePageDiagram = (
-  interactions: Interaction[],
-  vats: Vat[]
-) => {
-  let diagram = 'sequenceDiagram\n';
-
-  diagram += generateParticipants(interactions, vats);
-  diagram += generateInteractions(interactions, vats);
-
-  return diagram;
-};
-
 type RenderDiagramArgs = {
   code: string;
+  containerHeight: number;
   interactions: Array<Interaction>;
   mermaidRef: Ref<HTMLDivElement | null>;
 };
 
 export const renderDiagram = async ({
   code,
+  containerHeight,
   interactions,
   mermaidRef,
 }: RenderDiagramArgs) => {
@@ -460,8 +405,10 @@ export const renderDiagram = async ({
     const svgElement = mermaidRef.value.querySelector('svg');
 
     if (svgElement) {
-      svgElement.classList.add('flex-shrink-0', '!max-w-none');
-      svgElement.style.minWidth = svgElement.style.maxWidth;
+      svgElement.classList.add('flex-shrink-0', '!max-w-none', 'mx-auto');
+      const { height: svgHeight, width: svgWidth } = svgElement.getBBox();
+      svgElement.style.height = `${Math.max(svgHeight, containerHeight - 2 * MERMAID_CONTAINER_PADDING)}px`;
+      svgElement.style.width = `${svgWidth}px`;
 
       fixAlignments(svgElement);
       addParticipantTooltips(interactions, svgElement);

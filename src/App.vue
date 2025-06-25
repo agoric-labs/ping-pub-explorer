@@ -7,8 +7,6 @@ onMounted(() => themeChange(false));
 </script>
 
 <template>
-  <div>
-    <RouterView />
-    <TxDialog />
-  </div>
+  <RouterView />
+  <TxDialog />
 </template>

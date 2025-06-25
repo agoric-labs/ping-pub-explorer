@@ -1,12 +1,13 @@
 import { defineStore } from 'pinia';
-import { LoadingStatus } from '@/stores/useDashboard';
+import { EXTRACT_VAT_ID_REGEX } from '@/constants';
 import { get } from '@/libs/http';
+import { LoadingStatus } from '@/stores/useDashboard';
 
 export type Filters = Partial<{
   blockHeight: number;
   currentPage: number;
   endTime: string;
-  limit: number;
+  limit: string;
   runId: string;
   startTime: string;
 }>;
@@ -33,7 +34,6 @@ export type Vat = {
 };
 
 const API_BASE = '/rest/causeway';
-const EXTRACT_VAT_ID_REGEX = /^v([0-9]*)$/;
 
 export const useCauseway = defineStore('causeway', {
   actions: {

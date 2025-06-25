@@ -1,7 +1,3 @@
-<script setup lang="ts">
-import misc404 from '@/assets/images/pages/404.png';
-</script>
-
 <template>
   <div class="pt-10">
     <div class="text-center">
@@ -19,7 +15,7 @@ import misc404 from '@/assets/images/pages/404.png';
       <RouterLink to="/" class="btn no-underline btn-primary mt-4">
         {{ $t('pages.btn_index') }}
       </RouterLink>
-      <img :src="misc404" alt="Coming Soon" class="mx-auto h-[400px] mt-10" />
+      <img src="/404.png" alt="Coming Soon" class="mx-auto h-[400px] mt-10" />
     </div>
   </div>
 </template>
