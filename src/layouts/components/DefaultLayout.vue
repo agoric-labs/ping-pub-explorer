@@ -1,11 +1,12 @@
 <script lang="ts" setup>
 import dayjs from 'dayjs';
 import { computed, ref } from 'vue';
+import { useRoute } from 'vue-router';
 
 import ChainProfile from '@/layouts/components/ChainProfile.vue';
 import NavBarI18n from '@/layouts/components/NavBarI18n.vue';
 import NavBarWallet from '@/layouts/components/NavBarWallet.vue';
-import newFooter from '@/layouts/components/NavFooter.vue';
+import Footer from '@/layouts/components/NavFooter.vue';
 import NavbarSearch from '@/layouts/components/NavbarSearch.vue';
 import NavbarThemeSwitcher from '@/layouts/components/NavbarThemeSwitcher.vue';
 import Sponsors from '@/layouts/components/Sponsors.vue';
@@ -19,14 +20,16 @@ import { useBaseStore, useBlockchain } from '@/stores';
 import { NetworkType, useDashboard } from '@/stores/useDashboard';
 import { Icon } from '@iconify/vue';
 
-const dashboard = useDashboard();
-dashboard.initial();
-const blockchain = useBlockchain();
-blockchain.randomSetupEndpoint();
-const baseStore = useBaseStore();
-
-const current = ref(''); // the current chain
+const current = ref('');
+const sidebarOpen = ref(true);
+const sidebarShow = ref(false);
 const temp = ref('');
+const blockchain = useBlockchain();
+const baseStore = useBaseStore();
+const dashboard = useDashboard();
+const route = useRoute();
+
+blockchain.randomSetupEndpoint();
 blockchain.$subscribe((m, s) => {
   if (current.value === s.chainName && temp.value != s.endpoint.address) {
     temp.value = s.endpoint.address;
@@ -37,9 +40,7 @@ blockchain.$subscribe((m, s) => {
     blockchain.randomSetupEndpoint();
   }
 });
-
-const sidebarShow = ref(false);
-const sidebarOpen = ref(true);
+dashboard.initial();
 
 const changeOpen = (index: Number) => {
   if (index === 0) {
@@ -339,36 +340,34 @@ dayjs();
     </div>
 
     <!-- 👉 Pages -->
-    <div class="flex flex-col grow w-full">
-      <div v-if="behind" class="alert alert-error mb-4">
-        <div class="flex gap-2">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            class="stroke-current flex-shrink-0 w-6 h-6"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-            ></path>
-          </svg>
-          <span
-            >{{ $t('pages.out_of_sync') }} {{ blocktime.format() }} ({{
-              blocktime.fromNow()
-            }})</span
-          >
+    <RouterView v-slot="{ Component }">
+      <div class="flex flex-col grow w-full">
+        <div v-if="behind" class="alert alert-error mb-4">
+          <div class="flex gap-2">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              class="stroke-current flex-shrink-0 w-6 h-6"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              ></path>
+            </svg>
+            <span
+              >{{ $t('pages.out_of_sync') }} {{ blocktime.format() }} ({{
+                blocktime.fromNow()
+              }})</span
+            >
+          </div>
         </div>
+        <Component :is="Component" />
       </div>
-      <RouterView v-slot="{ Component }">
-        <Transition mode="out-in">
-          <Component :is="Component" />
-        </Transition>
-      </RouterView>
-    </div>
+    </RouterView>
 
-    <newFooter />
+    <Footer />
   </div>
 </template>
