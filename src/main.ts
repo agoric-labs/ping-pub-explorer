@@ -6,9 +6,11 @@ import '@/style.css';
 import LazyLoad from 'lazy-load-vue3';
 import { createPinia } from 'pinia';
 import { createApp, ref } from 'vue';
+import VueMultiselect from 'vue-multiselect';
 
 const app = createApp(App);
 
+app.component('v-select', VueMultiselect)
 app.use(i18n);
 app.use(createPinia());
 app.use(router);

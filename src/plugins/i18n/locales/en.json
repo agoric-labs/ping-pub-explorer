@@ -96,7 +96,8 @@
     "page-size-input-label": "Page Size",
     "previous-page-button-label": "Previous Page",
     "start-time-input-label": "Start Time",
-    "visualize-block-label": "Visualize"
+    "visualize-block-label": "Visualize",
+    "vat-filter-input-label": "Vat ID(s)"
   },
   "consensus": {
     "monitor": "Monitor",

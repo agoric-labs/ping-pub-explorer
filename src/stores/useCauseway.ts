@@ -10,6 +10,7 @@ export type Filters = Partial<{
   limit: string;
   runId: string;
   startTime: string;
+  vats: string;
 }>;
 
 export type Interaction = {

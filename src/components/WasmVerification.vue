@@ -1,15 +1,12 @@
 <script setup lang="ts">
-import { get, post } from '@/libs/http';
-import { useBaseStore, useTxDialog } from '@/stores';
-import { computed, onMounted, ref } from 'vue';
-import TextElement from '@/components/dynamic/TextElement.vue';
-import DynamicComponent from '@/components/dynamic/DynamicComponent.vue';
 import { codeToHtml } from 'shiki';
-import { useWasmStore } from '@/modules/[chain]/cosmwasm/WasmStore';
-import { toBase64 } from '@cosmjs/encoding';
-
+import { computed, ref } from 'vue';
 import { JsonViewer } from 'vue3-json-viewer';
-import { CosmjsOfflineSigner } from '@leapwallet/cosmos-snap-provider';
+
+import DynamicComponent from '@/components/dynamic/DynamicComponent.vue';
+import { get, post } from '@/libs/http';
+import { useWasmStore } from '@/modules/[chain]/cosmwasm/WasmStore';
+import { useBaseStore, useTxDialog } from '@/stores';
 
 interface Verification {
   chainId?: string;

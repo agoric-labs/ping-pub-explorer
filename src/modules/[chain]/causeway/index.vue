@@ -42,8 +42,11 @@ const getTimestampFromDate = (date: string) =>
 </script>
 
 <script lang="ts" setup>
+import 'vue-multiselect/dist/vue-multiselect.min.css';
+
 import { storeToRefs } from 'pinia';
 import { computed, onMounted, ref, watch } from 'vue';
+import VueSelect from 'vue-multiselect';
 import { type LocationQuery, useRoute, useRouter } from 'vue-router';
 
 import LoadingIcon from '@/icons/loading.svg';
@@ -54,6 +57,7 @@ import {
   renderDiagram,
 } from '@/libs/mermaid';
 import { useCauseway } from '@/stores/useCauseway';
+import type { Vat } from '@/stores/useCauseway';
 import { LoadingStatus } from '@/stores/useDashboard';
 
 const causeway = useCauseway();
@@ -84,6 +88,14 @@ const startTime = ref(
 );
 const { status, data } = storeToRefs(causeway);
 
+const extractVatsFromQuery = (query: LocationQuery) => {
+  const vatsInQuery = query.vats || [];
+  if (!(status.value === LoadingStatus.Loaded && vatsInQuery.length)) return [];
+  const vatsSet = new Set(vatsInQuery);
+
+  return data.value.vats.filter(({ vatID }) => vatsSet.has(vatID));
+};
+
 const currentPage = computed(() =>
   Math.max((Number(route.query.currentPage || '') || 1) - 1, 0)
 );
@@ -109,6 +121,8 @@ const totalPages = computed(() =>
   Math.ceil(data.value.interactionsCount / routerPageSize.value)
 );
 
+const selectedVats = ref(extractVatsFromQuery(route.query));
+
 const applyFilters = (currentPage = 0) =>
   router.push({
     path: route.path,
@@ -119,6 +133,7 @@ const applyFilters = (currentPage = 0) =>
       endTime: endTime.value,
       pageSize: pageSize.value,
       startTime: startTime.value,
+      vats: selectedVats.value.map(({ vatID }) => vatID),
     },
   });
 
@@ -136,10 +151,18 @@ const loadData = (loadCount: boolean, query: LocationQuery) => {
       endTime: isNaN(endTimestamp) ? '' : String(endTimestamp / 1000),
       limit: String(pageSize),
       startTime: isNaN(startTimestamp) ? '' : String(startTimestamp / 1000),
+      vats: (!query.vats
+        ? []
+        : !Array.isArray(query.vats)
+          ? [query.vats]
+          : query.vats
+      ).join(','),
     },
     loadCount
   );
 };
+
+const onVatSelection = (value: Array<Vat>) => (selectedVats.value = value);
 
 onMounted(() => {
   (blockHeight.value || endTime.value || startTime.value) &&
@@ -156,6 +179,8 @@ watch(
 
     if (!(newStatus === LoadingStatus.Loaded && data.value.interactions.length))
       return;
+
+    selectedVats.value = extractVatsFromQuery(route.query);
 
     const code = generateMermaidSequenceDiagram(
       data.value.interactions,
@@ -174,17 +199,33 @@ watch(
 
 watch(
   () => route.query,
-  (query, oldQuery) =>
-    (query.blockHeight ||
-      query.endTime ||
-      query.startTime ||
-      query.currentPage) &&
-    loadData(
-      query.blockHeight !== oldQuery.blockHeight ||
-        query.endTime !== oldQuery.endTime ||
-        query.startTime !== oldQuery.startTime,
-      query
-    ),
+  (query, oldQuery) => {
+    const oldVatIds = !oldQuery.vats
+      ? []
+      : !Array.isArray(oldQuery.vats)
+        ? Array(oldQuery.vats)
+        : oldQuery.vats;
+    const newVatIds = !query.vats
+      ? []
+      : !Array.isArray(query.vats)
+        ? Array(query.vats)
+        : query.vats;
+
+    return (
+      (query.blockHeight ||
+        query.endTime ||
+        query.startTime ||
+        query.currentPage) &&
+      loadData(
+        query.blockHeight !== oldQuery.blockHeight ||
+          query.endTime !== oldQuery.endTime ||
+          query.startTime !== oldQuery.startTime ||
+          oldVatIds.length !== newVatIds.length ||
+          newVatIds.some((vatID) => !oldVatIds.includes(vatID)),
+        query
+      )
+    );
+  },
   { deep: true }
 );
 </script>
@@ -198,10 +239,11 @@ watch(
     >
       <LoadingIcon class="animate-spin fill-primary h-8 w-8" />
     </div>
+
     <div class="flex flex-col gap-y-2 items-center w-full">
       <div class="flex gap-x-3 items-center w-full">
         <div
-          class="flex flex-col gap-2 grow"
+          class="flex flex-col gap-2 w-full"
           v-for="({ name }, index) in inputsMeta"
           :key="name"
         >
@@ -211,6 +253,30 @@ watch(
             :name="name"
             v-model="inputsMeta[index].ref.value"
           />
+        </div>
+
+        <div class="flex flex-col gap-2 w-full">
+          <h4 class="font-semibold">
+            {{ $t(`${LOCALE_PREFIX}.vat-filter-input-label`) }}
+          </h4>
+          <VueSelect
+            class="h-12 rounded-lg w-full"
+            label="name"
+            multiple
+            track-by="vatID"
+            :close-on-select="true"
+            :disabled="!(status === LoadingStatus.Loaded && !!data.vats.length)"
+            :options="data.vats"
+            :modelValue="selectedVats"
+            :searchable="false"
+            @update:modelValue="onVatSelection"
+          >
+            <template #selection="{ values }">
+              <span class="multiselect__placeholder" v-if="values.length">{{
+                `${values.length} options selected`
+              }}</span>
+            </template>
+          </VueSelect>
         </div>
       </div>
 

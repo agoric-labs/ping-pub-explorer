@@ -8092,6 +8092,11 @@ vue-json-viewer@3:
   dependencies:
     clipboard "^2.0.4"
 
+vue-multiselect@3.2.0:
+  version "3.2.0"
+  resolved "https://registry.yarnpkg.com/vue-multiselect/-/vue-multiselect-3.2.0.tgz#810077710ee7bf98e86534c31eebf22a0ab054d7"
+  integrity sha512-ExI+IPvSbILbtaHrU0CgbBmfbD6yBpIWJKsGLPmuQMC7VWK8Nj1XSAI9eIt3n9/e+LSFYdt8VgfHxeS1O1OeVA==
+
 vue-prism-component@^2.0.0:
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/vue-prism-component/-/vue-prism-component-2.0.0.tgz#eec89c5fe1ea3d8b55b8721d823b29d8b73b2b6d"
