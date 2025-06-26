@@ -96,6 +96,7 @@
     "page-size-input-label": "Page Size",
     "previous-page-button-label": "Previous Page",
     "start-time-input-label": "Start Time",
+    "run-id-filter-input-label": "Run ID(s)",
     "visualize-block-label": "Visualize",
     "vat-filter-input-label": "Vat ID(s)"
   },

@@ -16,13 +16,28 @@ const PARTICIPANT_LIFELINE_ID_PREFIX = 'actor';
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
 const addParticipantTooltips = (svgElement: SVGSVGElement, vats: Array<Vat>) =>
-  svgElement
-    .querySelectorAll<SVGGElement>(`g[id^="${PARTICIPANT_GROUP_ID_PREFIX}"]`)
-    .forEach((group) => {
-      const vatIndex = Number(
-        group.id.replace(new RegExp(`^${PARTICIPANT_GROUP_ID_PREFIX}`), '')
-      );
-      const vatInfo = vats[vatIndex % vats.length];
+  Array.from(
+    svgElement.querySelectorAll<SVGGElement>(
+      `g[id^="${PARTICIPANT_GROUP_ID_PREFIX}"]`
+    )
+  )
+    .sort(
+      (firstNode, secondNode) =>
+        Number(
+          firstNode.id.replace(
+            new RegExp(`^${PARTICIPANT_GROUP_ID_PREFIX}`),
+            ''
+          )
+        ) -
+        Number(
+          secondNode.id.replace(
+            new RegExp(`^${PARTICIPANT_GROUP_ID_PREFIX}`),
+            ''
+          )
+        )
+    )
+    .forEach((group, index) => {
+      const vatInfo = vats[index];
 
       const title = document.createElementNS(SVG_NS, 'title');
       title.textContent = vatInfo.name || vatInfo.vatID;
@@ -89,6 +104,8 @@ const fixMessages = (
   svgElement
     .querySelectorAll<SVGLineElement>(`[${LINE_NUMBER_ATTRIBUTE_NAME}]`)
     .forEach((lineElement) => {
+      lineElement.classList.add('dark:!stroke-slate-400', '!stroke-gray-600');
+
       const defaultOpacity = '0';
       const messageNumber = lineElement.getAttribute(
         LINE_NUMBER_ATTRIBUTE_NAME
@@ -119,7 +136,6 @@ const fixMessages = (
 
       group.appendChild(toolTip);
       lineElement.parentElement?.appendChild(group);
-      lineElement.classList.add('dark:!stroke-slate-400', '!stroke-gray-600');
 
       const bbox = toolTip.getBBox();
 
@@ -178,8 +194,8 @@ const fixMessages = (
     .getElementById('arrowhead')
     .children.item(0)
     ?.classList.add(
-      '!dark:fill-slate-400',
-      '!dark:stroke-slate-400',
+      'dark:!fill-slate-400',
+      'dark:!stroke-slate-400',
       '!fill-gray-600',
       '!stroke-gray-600'
     );
@@ -191,7 +207,7 @@ const generateInteractions = (interactions: Interaction[], vats: Vat[]) => {
   const vatIds = new Set();
   vats.forEach((vat) => vatIds.add(vat.vatID));
 
-  interactions.forEach((interaction, index) => {
+  interactions.forEach((interaction) => {
     const {
       argSize,
       blockHeight,
@@ -201,85 +217,37 @@ const generateInteractions = (interactions: Interaction[], vats: Vat[]) => {
       sourceVat,
       targetId,
       targetVat,
-      time,
       type,
     } = interaction;
 
-    if (!sourceVat || !targetVat) return;
+    if (!(vatIds.has(sourceVat) && vatIds.has(targetVat)))
+      return console.error(
+        `[FATAL]: Either ${sourceVat} or ${targetVat} not found in known vat IDs`
+      );
 
-    if (type === 'syscall' && vatIds.has(sourceVat)) {
-      if (!vatIds.has(targetVat) && targetVat !== 'system') {
-        const externalName = targetVat.startsWith('target:')
-          ? targetVat.substring(7)
-          : targetVat;
+    if (type === 'syscall') {
+      const methodDisplay =
+        method && method.length > 20 ? `${method.substring(0, 20)}...` : method;
 
-        const safeSourceVat = getMermaidId(sourceVat);
-
-        const methodDisplay =
-          method && method.length > 15
-            ? `${method.substring(0, 15)}... (${externalName.substring(0, 15)})`
-            : `${method} (${externalName.substring(0, 15)})`;
-
-        result += `    ${safeSourceVat}-x>External: ${methodDisplay}\n`;
-      } else if (vatIds.has(targetVat)) {
-        const safeSourceVat = getMermaidId(sourceVat);
-        const safeTargetVat = getMermaidId(targetVat);
-
-        const methodDisplay =
-          method && method.length > 20
-            ? `${method.substring(0, 20)}...`
-            : method;
-
-        result += `    ${safeSourceVat}->>>${safeTargetVat}: ${methodDisplay}\n`;
-      }
-    }
-    // Handle normal vat-to-vat or system-to-vat interactions
-    else {
-      let safeSourceVat;
-      let safeTargetVat;
-
-      if (sourceVat === 'system') safeSourceVat = 'System';
-      else if (vatIds.has(sourceVat)) safeSourceVat = getMermaidId(sourceVat);
-      else return;
-
-      if (targetVat === 'system') safeTargetVat = 'System';
-      else if (vatIds.has(targetVat)) safeTargetVat = getMermaidId(targetVat);
-      else return;
-
-      let arrow = '->>+';
-      if (type === 'notify') arrow = '-->>+';
-      else if (type === 'message') arrow = '->>+';
-
-      let methodDisplay =
+      result += `    ${getMermaidId(sourceVat)}->>>${getMermaidId(targetVat)}: ${methodDisplay}\n`;
+    } else {
+      const methodDisplay =
         method && method.length > 25 ? method.substring(0, 25) + '...' : method;
 
-      methodDisplay = methodDisplay.replace(/[^\w\s\-.,;:()]/g, '_');
       result += [
-        safeSourceVat,
-        arrow,
-        safeTargetVat,
+        getMermaidId(sourceVat),
+        type === 'notify' ? '-->>+' : '->>+',
+        getMermaidId(targetVat),
         `: ${blockHeight} ${Math.round(elapsed * 1000) / 1000} `,
         promiseId && `${promiseId} <-`,
         targetId,
         '.',
-        methodDisplay,
+        methodDisplay.replace(/[^\w\s\-.,;:()]/g, '_'),
         `(${argSize || ''})`,
         '\n',
       ]
         .filter(Boolean)
         .join('');
-    }
-
-    // Add logical breaks every 5 interactions for better readability
-    if (index % 5 === 4 && index < interactions.length - 1) {
-      const nextTime = interactions[index + 1].time;
-      const timeGap = nextTime - time;
-      const significantGap = timeGap > 30;
-      if (significantGap) {
-        result += `    Note over System: Time gap (${Math.floor(
-          timeGap
-        )} seconds)\n`;
-      }
     }
   });
 

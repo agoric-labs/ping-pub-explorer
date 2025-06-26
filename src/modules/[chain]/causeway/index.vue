@@ -88,8 +88,24 @@ const startTime = ref(
 );
 const { status, data } = storeToRefs(causeway);
 
+const extractAllValuesFromQueryForKey = (key: string, query: LocationQuery) =>
+  (!query[key]
+    ? []
+    : !Array.isArray(query[key])
+      ? [query[key]]
+      : query[key]) as Array<string>;
+
+const extractRunIdsFromQuery = (query: LocationQuery) => {
+  const runIdsInQuery = extractAllValuesFromQueryForKey('runId', query);
+  if (!(status.value === LoadingStatus.Loaded && runIdsInQuery.length))
+    return [];
+  const runIdsSet = new Set(runIdsInQuery);
+
+  return data.value.runIds.filter((runId) => runIdsSet.has(runId));
+};
+
 const extractVatsFromQuery = (query: LocationQuery) => {
-  const vatsInQuery = query.vats || [];
+  const vatsInQuery = extractAllValuesFromQueryForKey('vat', query);
   if (!(status.value === LoadingStatus.Loaded && vatsInQuery.length)) return [];
   const vatsSet = new Set(vatsInQuery);
 
@@ -121,6 +137,7 @@ const totalPages = computed(() =>
   Math.ceil(data.value.interactionsCount / routerPageSize.value)
 );
 
+const selectedRunIds = ref(extractRunIdsFromQuery(route.query));
 const selectedVats = ref(extractVatsFromQuery(route.query));
 
 const applyFilters = (currentPage = 0) =>
@@ -132,41 +149,62 @@ const applyFilters = (currentPage = 0) =>
         Number(pageSize.value) !== routerPageSize.value ? 1 : currentPage + 1,
       endTime: endTime.value,
       pageSize: pageSize.value,
+      runId: selectedRunIds.value,
       startTime: startTime.value,
-      vats: selectedVats.value.map(({ vatID }) => vatID),
+      vat: selectedVats.value.map(({ vatID }) => vatID),
     },
   });
 
-const loadData = (loadCount: boolean, query: LocationQuery) => {
+const loadData = ({
+  loadCount,
+  loadRunIds,
+  loadVats,
+  query,
+}: {
+  loadCount: boolean;
+  loadRunIds: boolean;
+  loadVats: boolean;
+  query: LocationQuery;
+}) => {
   const endTimestamp = getTimestampFromDate(String(query.endTime || ''));
   const startTimestamp = getTimestampFromDate(String(query.startTime || ''));
   const pageSize = getSanitizedPageSize(String(query.pageSize || ''));
 
-  causeway.loadData(
-    {
+  causeway.loadData({
+    filters: {
       blockHeight: String(query.blockHeight || '').match(IS_NUMBER_REGEX)
         ? Number(blockHeight.value)
         : 0,
       currentPage: currentPage.value,
       endTime: isNaN(endTimestamp) ? '' : String(endTimestamp / 1000),
       limit: String(pageSize),
+      runIds: extractAllValuesFromQueryForKey('runId', query).join(','),
       startTime: isNaN(startTimestamp) ? '' : String(startTimestamp / 1000),
-      vats: (!query.vats
-        ? []
-        : !Array.isArray(query.vats)
-          ? [query.vats]
-          : query.vats
-      ).join(','),
+      vats: extractAllValuesFromQueryForKey('vat', query).join(','),
     },
-    loadCount
-  );
+    loadCount,
+    loadRunIds,
+    loadVats,
+  });
 };
+
+const onRunIdSelection = (value: Array<string>) =>
+  (selectedRunIds.value = value);
 
 const onVatSelection = (value: Array<Vat>) => (selectedVats.value = value);
 
 onMounted(() => {
-  (blockHeight.value || endTime.value || startTime.value) &&
-    loadData(true, route.query);
+  (blockHeight.value ||
+    endTime.value ||
+    extractAllValuesFromQueryForKey('runId', route.query).length ||
+    startTime.value ||
+    extractAllValuesFromQueryForKey('vat', route.query).length) &&
+    loadData({
+      loadCount: true,
+      loadRunIds: true,
+      loadVats: true,
+      query: route.query,
+    });
   containerHeight.value = mermaidRef.value?.getBoundingClientRect().height || 0;
 });
 
@@ -180,6 +218,7 @@ watch(
     if (!(newStatus === LoadingStatus.Loaded && data.value.interactions.length))
       return;
 
+    selectedRunIds.value = extractRunIdsFromQuery(route.query);
     selectedVats.value = extractVatsFromQuery(route.query);
 
     const code = generateMermaidSequenceDiagram(
@@ -200,30 +239,48 @@ watch(
 watch(
   () => route.query,
   (query, oldQuery) => {
-    const oldVatIds = !oldQuery.vats
-      ? []
-      : !Array.isArray(oldQuery.vats)
-        ? Array(oldQuery.vats)
-        : oldQuery.vats;
-    const newVatIds = !query.vats
-      ? []
-      : !Array.isArray(query.vats)
-        ? Array(query.vats)
-        : query.vats;
+    const blockHeightChanged = query.blockHeight !== oldQuery.blockHeight;
+    const endTimeChanged = query.endTime !== oldQuery.endTime;
+    const newRunIds = extractAllValuesFromQueryForKey('runId', query);
+    const newVatIds = extractAllValuesFromQueryForKey('vat', query);
+    const oldRunIds = extractAllValuesFromQueryForKey('runId', oldQuery);
+    const oldVatIds = extractAllValuesFromQueryForKey('vat', oldQuery);
+    const startTimeChanged = query.startTime !== oldQuery.startTime;
+
+    const runIdChanged =
+      oldRunIds.length !== newRunIds.length ||
+      newRunIds.some((vatID) => !oldRunIds.includes(vatID));
+    const vatIdsChanged =
+      oldVatIds.length !== newVatIds.length ||
+      newVatIds.some((vatID) => !oldVatIds.includes(vatID));
 
     return (
       (query.blockHeight ||
+        query.currentPage ||
         query.endTime ||
         query.startTime ||
-        query.currentPage) &&
-      loadData(
-        query.blockHeight !== oldQuery.blockHeight ||
-          query.endTime !== oldQuery.endTime ||
-          query.startTime !== oldQuery.startTime ||
-          oldVatIds.length !== newVatIds.length ||
-          newVatIds.some((vatID) => !oldVatIds.includes(vatID)),
-        query
-      )
+        !!newVatIds.length) &&
+      loadData({
+        loadCount:
+          blockHeightChanged ||
+          endTimeChanged ||
+          runIdChanged ||
+          startTimeChanged ||
+          vatIdsChanged,
+        loadRunIds:
+          blockHeightChanged ||
+          endTimeChanged ||
+          runIdChanged ||
+          startTimeChanged ||
+          vatIdsChanged,
+        loadVats:
+          blockHeightChanged ||
+          endTimeChanged ||
+          runIdChanged ||
+          startTimeChanged ||
+          vatIdsChanged,
+        query,
+      })
     );
   },
   { deep: true }
@@ -240,10 +297,10 @@ watch(
       <LoadingIcon class="animate-spin fill-primary h-8 w-8" />
     </div>
 
-    <div class="flex flex-col gap-y-2 items-center w-full">
-      <div class="flex gap-x-3 items-center w-full">
+    <div class="flex flex-col gap-y-3 items-center w-full">
+      <div class="flex flex-wrap gap-3 items-center xl:flex-nowrap w-full">
         <div
-          class="flex flex-col gap-2 w-full"
+          class="basis-1/3 flex flex-col gap-2 grow"
           v-for="({ name }, index) in inputsMeta"
           :key="name"
         >
@@ -255,7 +312,7 @@ watch(
           />
         </div>
 
-        <div class="flex flex-col gap-2 w-full">
+        <div class="basis-1/3 flex flex-col gap-2 grow">
           <h4 class="font-semibold">
             {{ $t(`${LOCALE_PREFIX}.vat-filter-input-label`) }}
           </h4>
@@ -264,12 +321,34 @@ watch(
             label="name"
             multiple
             track-by="vatID"
-            :close-on-select="true"
+            :close-on-select="false"
             :disabled="!(status === LoadingStatus.Loaded && !!data.vats.length)"
             :options="data.vats"
             :modelValue="selectedVats"
-            :searchable="false"
             @update:modelValue="onVatSelection"
+          >
+            <template #selection="{ values }">
+              <span class="multiselect__placeholder" v-if="values.length">{{
+                `${values.length} options selected`
+              }}</span>
+            </template>
+          </VueSelect>
+        </div>
+
+        <div class="basis-1/3 flex flex-col gap-2 grow">
+          <h4 class="font-semibold">
+            {{ $t(`${LOCALE_PREFIX}.run-id-filter-input-label`) }}
+          </h4>
+          <VueSelect
+            class="h-12 rounded-lg w-full"
+            multiple
+            :close-on-select="false"
+            :disabled="
+              !(status === LoadingStatus.Loaded && !!data.runIds.length)
+            "
+            :options="data.runIds"
+            :modelValue="selectedRunIds"
+            @update:modelValue="onRunIdSelection"
           >
             <template #selection="{ values }">
               <span class="multiselect__placeholder" v-if="values.length">{{

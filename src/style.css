@@ -29,9 +29,9 @@ html {
 
 html.dark,
 html[data-theme='dark'] {
-  --bg-active: #242b40;
-  --text-main: #f7f7f7;
-  --text-secondary: #6f6e84;
+  --bg-active: #242B40;
+  --text-main: #F7F7F7;
+  --text-secondary: #6F6E84;
 }
 @tailwind components;
 #app {
@@ -50,9 +50,13 @@ html[data-theme='dark'] {
 }
 
 :root {
-  --bg-active: #fbfbfc;
-  --text-main: #333;
-  --text-secondary: #4b525d;
+  --bg-active: #FBFBFC;
+  --text-main: #333333;
+  --text-secondary: #4B525D;
+}
+
+.multiselect__option--highlight::after {
+  content: none !important;
 }
 
 .multiselect__placeholder {
