@@ -317,7 +317,7 @@ watch(
             {{ $t(`${LOCALE_PREFIX}.vat-filter-input-label`) }}
           </h4>
           <VueSelect
-            class="h-12 rounded-lg w-full"
+            class="dark:placeholder-gray-300 dark:text-gray-300 h-12 placeholder-gray-500 rounded-lg text-gray-500 w-full"
             label="name"
             multiple
             track-by="vatID"
@@ -340,7 +340,7 @@ watch(
             {{ $t(`${LOCALE_PREFIX}.run-id-filter-input-label`) }}
           </h4>
           <VueSelect
-            class="h-12 rounded-lg w-full"
+            class="dark:placeholder-gray-300 dark:text-gray-300 h-12 placeholder-gray-500 rounded-lg text-gray-500 w-full"
             multiple
             :close-on-select="false"
             :disabled="

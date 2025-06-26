@@ -55,16 +55,23 @@ html[data-theme='dark'] {
   --text-secondary: #4B525D;
 }
 
+.multiselect__content-wrapper {
+  @apply border-gray-100 dark:border-gray-700;
+}
+
+.multiselect__input, .multiselect__placeholder {
+  @apply !m-0 !p-0 !text-sm;
+}
+
+.multiselect__content-wrapper, .multiselect__input, .multiselect__select, .multiselect__tags {
+  background-color: hsl(var(--b1) / var(--tw-bg-opacity)) !important;
+}
+
 .multiselect__option--highlight::after {
   content: none !important;
 }
 
-.multiselect__placeholder {
-  @apply !m-0 !p-0;
-}
-
 .multiselect__select, .multiselect__tags {
-  background-color: hsl(var(--b1) / var(--tw-bg-opacity)) !important;
   @apply !h-full;
 }
 

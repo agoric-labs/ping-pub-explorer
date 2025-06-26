@@ -6,6 +6,7 @@ import {
   CAUSEWAY_MAXIMUM_PAGE_SIZE,
   IS_NUMBER_REGEX,
   MERMAID_CONTAINER_PADDING,
+  ZCF_PREFIX_REGEX,
 } from '@/constants';
 import type { Interaction, Vat } from '@/stores/useCauseway';
 
@@ -267,37 +268,27 @@ export const getSanitizedPageSize = (pageSize: string) =>
 export const generateMermaidSequenceDiagram = (
   interactions: Array<Interaction>,
   vats: Array<Vat>
-) => {
-  interactions.sort((a, b) => a.time - b.time);
+) =>
+  [
+    'sequenceDiagram',
+    generateParticipants(vats),
+    generateInteractions(
+      interactions.sort((a, b) => a.time - b.time),
+      vats
+    ),
+  ].join('\n');
 
-  let diagram = 'sequenceDiagram\n';
-
-  diagram += generateParticipants(interactions, vats);
-  diagram += generateInteractions(interactions, vats);
-
-  return diagram;
-};
-
-const generateParticipants = (
-  interactions: Interaction[],
-  vats: Vat[]
-): string => {
-  let result = '';
-  const hasSystemMessages = interactions.some(
-    (i) => i.sourceVat === 'system' || i.targetVat === 'system'
-  );
-
-  for (const vat of vats) {
-    const mermaidId = getMermaidId(vat.vatID);
-    const displayName =
-      vat.vatID !== vat.name ? `${vat.vatID}:${truncate(vat.name)}` : vat.vatID;
-    result += `    participant ${mermaidId} as ${displayName}\n`;
-  }
-
-  if (hasSystemMessages) result += '    participant System as "System"\n';
-
-  return result;
-};
+const generateParticipants = (vats: Vat[]): string =>
+  vats
+    .map(
+      (vat) =>
+        `    participant ${getMermaidId(vat.vatID)} as ${
+          vat.vatID !== vat.name
+            ? `${vat.vatID}:${truncate(vat.name.replace(ZCF_PREFIX_REGEX, ''))}`
+            : vat.vatID
+        }`
+    )
+    .join('\n');
 
 type RenderDiagramArgs = {
   code: string;
