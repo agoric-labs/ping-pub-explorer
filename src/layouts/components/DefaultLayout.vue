@@ -80,10 +80,10 @@ dayjs();
 <template>
   <!-- sidebar -->
   <div
-    class="bg-base-100 border-gray-100 border-r dark:border-gray-700 flex-shrink-0 no-scrollbar overflow-auto w-64 z-50"
-    :class="{ block: sidebarShow, 'hidden xl:!block': !sidebarShow }"
+    class="absolute bg-base-100 border-gray-100 border-r bottom-0 dark:border-gray-700 flex-col flex-shrink-0 gap-y-2 left-0 no-scrollbar overflow-auto p-2 top-0 w-64 xl:!static xl:bottom-auto xl:left-auto xl:top-auto z-50"
+    :class="{ flex: sidebarShow, 'hidden xl:!flex': !sidebarShow }"
   >
-    <div class="flex justify-between mt-1 pl-4 py-4 mb-1">
+    <div class="flex justify-between pl-4 py-4">
       <RouterLink to="/" class="flex items-center">
         <img class="w-10 h-10" src="/logo.svg" />
         <h1 class="flex-1 ml-3 text-2xl font-semibold dark:text-white">
@@ -94,10 +94,10 @@ dayjs();
         <Icon icon="mdi-close" class="text-2xl" />
       </div>
     </div>
+
     <div
       v-for="(item, index) of blockchain.computedChainMenu"
       :key="index"
-      class="px-2"
     >
       <div
         v-if="isNavGroup(item)"
@@ -250,7 +250,8 @@ dayjs();
         {{ item?.heading }}
       </div>
     </div>
-    <div class="px-2">
+
+    <div>
       <div class="px-4 text-sm pt-2 text-gray-400 pb-2 uppercase">Tools</div>
       <RouterLink
         to="/wallet/suggest"
