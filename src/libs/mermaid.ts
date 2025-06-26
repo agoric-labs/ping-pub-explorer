@@ -11,25 +11,82 @@ import type { Interaction, Vat } from '@/stores/useCauseway';
 
 const LINE_NUMBER_ATTRIBUTE_NAME = 'messagelinenumber';
 const MESSAGE_NUMBER_ATTRIBUTE_NAME = 'messagenumber';
+const PARTICIPANT_GROUP_ID_PREFIX = 'root-';
+const PARTICIPANT_LIFELINE_ID_PREFIX = 'actor';
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
-const addParticipantTooltips = (
+const addParticipantTooltips = (svgElement: SVGSVGElement, vats: Array<Vat>) =>
+  svgElement
+    .querySelectorAll<SVGGElement>(`g[id^="${PARTICIPANT_GROUP_ID_PREFIX}"]`)
+    .forEach((group) => {
+      const vatIndex = Number(
+        group.id.replace(new RegExp(`^${PARTICIPANT_GROUP_ID_PREFIX}`), '')
+      );
+      const vatInfo = vats[vatIndex % vats.length];
+
+      const title = document.createElementNS(SVG_NS, 'title');
+      title.textContent = vatInfo.name || vatInfo.vatID;
+
+      group.appendChild(title);
+    });
+
+const fixAlignments = (svgElement: SVGSVGElement) => {
+  const centres: { [key: string]: number } = {};
+
+  const findActor = (x: number) =>
+    Object.entries(centres).reduce<{ id: string; dist: number }>(
+      (best, [id, cx]) => {
+        const d = Math.abs(cx - x);
+        return d < best.dist ? { id, dist: d } : best;
+      },
+      { id: '', dist: Infinity }
+    ).id;
+
+  svgElement
+    .querySelectorAll<SVGLineElement>(
+      `line[id^="${PARTICIPANT_LIFELINE_ID_PREFIX}"]`
+    )
+    .forEach((line) => {
+      centres[
+        line.id.replace(new RegExp(`^${PARTICIPANT_LIFELINE_ID_PREFIX}`), '')
+      ] = parseFloat(line.getAttribute('x1')!) + 1;
+      line.classList.add('dark:!stroke-slate-600', '!stroke-gray-300');
+    });
+
+  svgElement
+    .querySelectorAll<SVGLineElement>('line[class^="messageLine"]')
+    .forEach((line) => {
+      const x1 = parseFloat(line.getAttribute('x1')!);
+      const x2 = parseFloat(line.getAttribute('x2')!);
+
+      const callerId = findActor(x1);
+      const targetId = findActor(x2);
+
+      if (!callerId || !targetId)
+        return console.log('Failed to find best actors for: ', line.outerHTML);
+
+      line.setAttribute('x1', String(centres[callerId]));
+      line.setAttribute('x2', String(centres[targetId]));
+    });
+};
+
+const fixMessages = (
   interactions: Array<Interaction>,
-  svg: SVGSVGElement
+  svgElement: SVGSVGElement
 ) => {
   const messageTooltipMap: { [key: string]: SVGGElement } = {};
-  svg
+  svgElement
     .querySelectorAll<SVGTextElement>('text[class="messageText"]')
     .forEach((textElement) => {
       textElement.style.removeProperty('font-size');
       textElement.classList.add(
-        '!dark:fill-gray-300',
-        '!fill-gray-500',
+        'dark:!fill-slate-400',
+        '!fill-gray-600',
         'text-xs'
       );
     });
 
-  svg
+  svgElement
     .querySelectorAll<SVGLineElement>(`[${LINE_NUMBER_ATTRIBUTE_NAME}]`)
     .forEach((lineElement) => {
       const defaultOpacity = '0';
@@ -62,7 +119,7 @@ const addParticipantTooltips = (
 
       group.appendChild(toolTip);
       lineElement.parentElement?.appendChild(group);
-      lineElement.classList.add('!dark:stroke-gray-300', '!stroke-gray-500');
+      lineElement.classList.add('dark:!stroke-slate-400', '!stroke-gray-600');
 
       const bbox = toolTip.getBBox();
 
@@ -97,7 +154,7 @@ const addParticipantTooltips = (
       messageTooltipMap[messageNumber] = group;
     });
 
-  svg
+  svgElement
     .querySelectorAll<SVGTextElement>(`[${MESSAGE_NUMBER_ATTRIBUTE_NAME}]`)
     .forEach((textElement) => {
       const messageNumber = textElement.getAttribute(
@@ -117,124 +174,15 @@ const addParticipantTooltips = (
       );
     });
 
-  svg
+  svgElement
     .getElementById('arrowhead')
     .children.item(0)
     ?.classList.add(
-      '!dark:fill-gray-300',
-      '!dark:stroke-gray-300',
-      '!fill-gray-500',
-      '!stroke-gray-500'
+      '!dark:fill-slate-400',
+      '!dark:stroke-slate-400',
+      '!fill-gray-600',
+      '!stroke-gray-600'
     );
-
-  const actorRects = svg.querySelectorAll('rect.actor, .labelBox');
-  const actorLabels = svg.querySelectorAll('.actor, .labelText');
-
-  actorRects.forEach((rectElement) => {
-    const rect = rectElement as unknown as SVGRectElement;
-    const textLabel = findLabelForRect(rect, actorLabels);
-    if (textLabel && textLabel.textContent) {
-      const displayedName = textLabel.textContent.trim();
-      let tooltipText;
-
-      if (displayedName.includes('System'))
-        tooltipText = 'System: The Neo4j system participant';
-      else {
-        let vatName = displayedName;
-        if (displayedName.endsWith('...'))
-          vatName = displayedName.replace('...', '');
-        tooltipText = `Vat: ${vatName}\nClick to focus on this vat's interactions`;
-      }
-
-      const title = document.createElementNS(SVG_NS, 'title');
-      title.textContent = tooltipText;
-      rect.appendChild(title);
-
-      rect.classList.add('participant-hover');
-    }
-  });
-
-  actorLabels.forEach((label) => {
-    if (label && label.textContent) {
-      const displayedName = label.textContent.trim();
-      let tooltipText;
-
-      if (displayedName.includes('System'))
-        tooltipText = 'System: The Neo4j system participant';
-      else {
-        let vatName = displayedName;
-
-        if (displayedName.endsWith('...'))
-          vatName = displayedName.replace('...', '');
-        tooltipText = `Vat: ${vatName}`;
-      }
-
-      const title = document.createElementNS(SVG_NS, 'title');
-      title.textContent = tooltipText;
-      label.appendChild(title);
-      label.classList.add('has-tooltip');
-    }
-  });
-};
-
-const findLabelForRect = (
-  rect: SVGRectElement,
-  labels: NodeListOf<Element>
-) => {
-  const rectX = parseFloat(rect.getAttribute('x') || '0');
-  const rectY = parseFloat(rect.getAttribute('y') || '0');
-  const rectWidth = parseFloat(rect.getAttribute('width') || '0');
-
-  for (const label of Array.from(labels)) {
-    const labelX = parseFloat(label.getAttribute('x') || '0');
-    const labelY = parseFloat(label.getAttribute('y') || '0');
-
-    if (
-      Math.abs(labelX - (rectX + rectWidth / 2)) < rectWidth / 2 + 5 &&
-      Math.abs(labelY - (rectY + 15)) < 20
-    ) {
-      return label;
-    }
-  }
-
-  return null;
-};
-
-const fixAlignments = (svgElement: SVGSVGElement) => {
-  const centres: { [key: string]: number } = {};
-
-  const findActor = (x: number) =>
-    Object.entries(centres).reduce<{ id: string; dist: number }>(
-      (best, [id, cx]) => {
-        const d = Math.abs(cx - x);
-        return d < best.dist ? { id, dist: d } : best;
-      },
-      { id: '', dist: Infinity }
-    ).id;
-
-  svgElement
-    .querySelectorAll<SVGLineElement>('line[id^="actor"]')
-    .forEach(
-      (line) =>
-        (centres[line.id.replace(/^actor/, '')] =
-          parseFloat(line.getAttribute('x1')!) + 1)
-    );
-
-  svgElement
-    .querySelectorAll<SVGLineElement>('line[class^="messageLine"]')
-    .forEach((line) => {
-      const x1 = parseFloat(line.getAttribute('x1')!);
-      const x2 = parseFloat(line.getAttribute('x2')!);
-
-      const callerId = findActor(x1);
-      const targetId = findActor(x2);
-
-      if (!callerId || !targetId)
-        return console.log('Failed to find best actors for: ', line.outerHTML);
-
-      line.setAttribute('x1', String(centres[callerId]));
-      line.setAttribute('x2', String(centres[targetId]));
-    });
 };
 
 const generateInteractions = (interactions: Interaction[], vats: Vat[]) => {
@@ -349,8 +297,8 @@ export const getSanitizedPageSize = (pageSize: string) =>
   );
 
 export const generateMermaidSequenceDiagram = (
-  interactions: Interaction[],
-  vats: Vat[]
+  interactions: Array<Interaction>,
+  vats: Array<Vat>
 ) => {
   interactions.sort((a, b) => a.time - b.time);
 
@@ -388,6 +336,7 @@ type RenderDiagramArgs = {
   containerHeight: number;
   interactions: Array<Interaction>;
   mermaidRef: Ref<HTMLDivElement | null>;
+  vats: Array<Vat>;
 };
 
 export const renderDiagram = async ({
@@ -395,6 +344,7 @@ export const renderDiagram = async ({
   containerHeight,
   interactions,
   mermaidRef,
+  vats,
 }: RenderDiagramArgs) => {
   if (!(code && mermaidRef.value)) return;
 
@@ -410,8 +360,9 @@ export const renderDiagram = async ({
       svgElement.style.height = `${Math.max(svgHeight, containerHeight - 2 * MERMAID_CONTAINER_PADDING)}px`;
       svgElement.style.width = `${svgWidth}px`;
 
+      addParticipantTooltips(svgElement, vats);
       fixAlignments(svgElement);
-      addParticipantTooltips(interactions, svgElement);
+      fixMessages(interactions, svgElement);
     }
   } catch (error) {
     const errorMessage = (error as Error).message;

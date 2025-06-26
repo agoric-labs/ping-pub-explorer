@@ -37,6 +37,17 @@ html[data-theme='dark'] {
 #app {
   @apply bg-gray-100 dark:bg-gray-dark-100 flex h-screen;
 }
+#mermaid-svg .actor {
+  @apply cursor-help dark:fill-slate-700 dark:stroke-slate-700 duration-300 fill-indigo-100 stroke-indigo-100 transition-all;
+  tspan {
+    @apply dark:fill-white duration-300 fill-black transition-all;
+  }
+}
+#mermaid-svg g[id^="root"]:hover {
+  text {
+    @apply !font-bold;
+  }
+}
 
 :root {
   --bg-active: #fbfbfc;

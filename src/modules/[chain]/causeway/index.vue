@@ -166,6 +166,7 @@ watch(
       containerHeight: containerHeight.value,
       interactions: data.value.interactions,
       mermaidRef,
+      vats: data.value.vats,
     });
   },
   { deep: true }
