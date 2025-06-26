@@ -316,7 +316,7 @@ export const renderDiagram = async ({
     if (svgElement) {
       svgElement.classList.add('flex-shrink-0', '!max-w-none', 'mx-auto');
       const { height: svgHeight, width: svgWidth } = svgElement.getBBox();
-      svgElement.style.height = `${Math.max(svgHeight, containerHeight - 2 * MERMAID_CONTAINER_PADDING)}px`;
+      svgElement.style.maxHeight = `${Math.max(svgHeight, containerHeight - 2 * MERMAID_CONTAINER_PADDING)}px`;
       svgElement.style.width = `${svgWidth}px`;
 
       addParticipantTooltips(svgElement, vats);

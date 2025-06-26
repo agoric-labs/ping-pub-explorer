@@ -46,11 +46,12 @@ import 'vue-multiselect/dist/vue-multiselect.min.css';
 
 import { storeToRefs } from 'pinia';
 import { computed, onMounted, ref, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
 import VueSelect from 'vue-multiselect';
 import { type LocationQuery, useRoute, useRouter } from 'vue-router';
 
 import LoadingIcon from '@/icons/loading.svg';
-import WarningIcon from '@/icons/warning.svg';
+import WarningIcon from '@/icons/warning.svg?url';
 import {
   generateMermaidSequenceDiagram,
   getSanitizedPageSize,
@@ -60,6 +61,7 @@ import { useCauseway } from '@/stores/useCauseway';
 import type { Vat } from '@/stores/useCauseway';
 import { LoadingStatus } from '@/stores/useDashboard';
 
+const { t } = useI18n();
 const causeway = useCauseway();
 const route = useRoute();
 const router = useRouter();
@@ -215,23 +217,32 @@ watch(
       document.body.classList.add('h-screen', 'overflow-hidden');
     else document.body.classList.remove('h-screen', 'overflow-hidden');
 
-    if (!(newStatus === LoadingStatus.Loaded && data.value.interactions.length))
-      return;
+    if (newStatus !== LoadingStatus.Loaded) return;
 
-    selectedRunIds.value = extractRunIdsFromQuery(route.query);
-    selectedVats.value = extractVatsFromQuery(route.query);
+    if (!data.value.interactions.length)
+      mermaidRef.value &&
+        (mermaidRef.value.innerHTML = `
+          <div class="dark:text-gray-400 flex flex-col gap-y-4 h-full items-center justify-center text-gray-500 w-full">
+            <img class="h-16 w-16" src="${WarningIcon}" />
+            <h4>${t(`${LOCALE_PREFIX}.no-data-found-message`)}</h4>
+          </div>
+        `);
+    else {
+      selectedRunIds.value = extractRunIdsFromQuery(route.query);
+      selectedVats.value = extractVatsFromQuery(route.query);
 
-    const code = generateMermaidSequenceDiagram(
-      data.value.interactions,
-      data.value.vats
-    );
-    renderDiagram({
-      code,
-      containerHeight: containerHeight.value,
-      interactions: data.value.interactions,
-      mermaidRef,
-      vats: data.value.vats,
-    });
+      const code = generateMermaidSequenceDiagram(
+        data.value.interactions,
+        data.value.vats
+      );
+      renderDiagram({
+        code,
+        containerHeight: containerHeight.value,
+        interactions: data.value.interactions,
+        mermaidRef,
+        vats: data.value.vats,
+      });
+    }
   },
   { deep: true }
 );
@@ -403,14 +414,6 @@ watch(
       class="bg-transparent border border-gray-L300 border-solid grow max-w-full no-scrollbar overflow-scroll rounded-sm shrink"
       ref="mermaidRef"
       :style="`padding: ${MERMAID_CONTAINER_PADDING}px`"
-    >
-      <div
-        class="dark:text-gray-400 flex flex-col gap-y-4 h-full items-center justify-center text-gray-500 w-full"
-        v-if="status === LoadingStatus.Loaded && !data.interactions.length"
-      >
-        <WarningIcon class="h-16 w-16" />
-        <h4>{{ $t(`${LOCALE_PREFIX}.no-data-found-message`) }}</h4>
-      </div>
-    </div>
+    />
   </div>
 </template>
