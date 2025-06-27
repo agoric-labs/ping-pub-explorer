@@ -205,3 +205,26 @@ export function rgbToHsl(color: string) {
     l,
   };
 }
+
+export const cleanJSON = (input: any): any =>
+  typeof input !== 'object' || !input
+    ? input
+    : Array.isArray(input)
+      ? input.map((_) => cleanJSON(typeof _ === 'string' ? parseString(_) : _))
+      : Object.entries(input).reduce(
+          (acc, [key, value]) => ({
+            ...acc,
+            [key]: cleanJSON(
+              typeof value === 'string' ? parseString(value) : value
+            ),
+          }),
+          {}
+        );
+
+const parseString = (str: string) => {
+  try {
+    return JSON.parse(str.replace(/^[!#]*/, ''));
+  } catch (error) {
+    return str;
+  }
+};

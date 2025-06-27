@@ -8,6 +8,7 @@ import {
   MERMAID_CONTAINER_PADDING,
   ZCF_PREFIX_REGEX,
 } from '@/constants';
+import { cleanJSON } from '@/libs/utils';
 import type { Interaction, Vat } from '@/stores/useCauseway';
 
 const LINE_NUMBER_ATTRIBUTE_NAME = 'messagelinenumber';
@@ -180,6 +181,18 @@ const fixMessages = (
 
       const toolTip = messageTooltipMap[messageNumber];
       if (!toolTip) return;
+
+      const interaction = interactions[Number(messageNumber) - 1];
+      const textContent = textElement.textContent;
+      textElement.innerHTML = '';
+
+      const textContentChild = document.createElementNS(SVG_NS, 'tspan');
+      textContentChild.textContent = textContent;
+      textElement.appendChild(textContentChild);
+
+      const title = document.createElementNS(SVG_NS, 'title');
+      title.textContent = `${cleanJSON(interaction.methargs)}`;
+      textElement.appendChild(title);
 
       textElement.addEventListener(
         'mouseenter',

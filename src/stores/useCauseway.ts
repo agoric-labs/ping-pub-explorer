@@ -19,6 +19,7 @@ export type Interaction = {
   crankNum: number;
   elapsed: number;
   method: string;
+  methargs: string;
   promiseId: string;
   runId: string;
   sourceVat: string;
