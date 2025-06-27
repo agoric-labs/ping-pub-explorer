@@ -191,7 +191,12 @@ const fixMessages = (
       textElement.appendChild(textContentChild);
 
       const title = document.createElementNS(SVG_NS, 'title');
-      title.textContent = `${cleanJSON(interaction.methargs)}`;
+      try {
+        title.textContent = JSON.stringify(
+          cleanJSON(JSON.parse(interaction.methargs))
+        );
+      } catch {}
+      title.textContent = interaction.methargs;
       textElement.appendChild(title);
 
       textElement.addEventListener(
