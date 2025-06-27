@@ -195,8 +195,9 @@ const fixMessages = (
         title.textContent = JSON.stringify(
           cleanJSON(JSON.parse(interaction.methargs))
         );
-      } catch {}
-      title.textContent = interaction.methargs;
+      } catch {
+        title.textContent = interaction.methargs;
+      }
       textElement.appendChild(title);
 
       textElement.addEventListener(
