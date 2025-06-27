@@ -63,17 +63,27 @@ const getInteractions = async (filters: Filters) =>
   get<Array<Interaction>>(
     `${API_BASE}/interactions?${convertFiltersToQueryParameters(filters)}`
   );
+
 const getInteractionsCount = async (filters: Filters) =>
   get<{ interactionsCount: number }>(
     `${API_BASE}/interactions/count?${convertFiltersToQueryParameters(filters)}`
   );
+
 const getRunIds = async (filters: Filters) =>
   get<Array<string>>(
     `${API_BASE}/run-ids?${convertFiltersToQueryParameters(filters)}`
   );
+
 const getVats = async (filters: Filters) =>
   get<Array<Vat>>(
     `${API_BASE}/vats?${convertFiltersToQueryParameters(filters)}`
+  );
+
+const sortVats = (vats: Awaited<ReturnType<typeof getVats>>) =>
+  vats.sort(
+    ({ vatID: firstVatID }, { vatID: secondVatID }) =>
+      Number(EXTRACT_VAT_ID_REGEX.exec(firstVatID)![1]) -
+      Number(EXTRACT_VAT_ID_REGEX.exec(secondVatID)![1])
   );
 
 export const useCauseway = defineStore('causeway', {
@@ -117,11 +127,7 @@ export const useCauseway = defineStore('causeway', {
           interactions,
           interactionsCount,
           runIds,
-          vats: vats.sort(
-            ({ vatID: firstVatID }, { vatID: secondVatID }) =>
-              Number(EXTRACT_VAT_ID_REGEX.exec(firstVatID)![1]) -
-              Number(EXTRACT_VAT_ID_REGEX.exec(secondVatID)![1])
-          ),
+          vats: sortVats(vats),
         },
         status: LoadingStatus.Loaded,
       };
@@ -130,7 +136,7 @@ export const useCauseway = defineStore('causeway', {
       this.$state.vats.status = LoadingStatus.Loading;
       const vats = await getVats(filters);
       this.$state.vats.status = LoadingStatus.Loaded;
-      this.$state.vats.data = vats;
+      this.$state.vats.data = sortVats(vats);
     },
   },
   state: (): State => ({

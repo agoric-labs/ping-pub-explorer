@@ -242,11 +242,11 @@ watch(
 
     if (newStatus !== LoadingStatus.Loaded) return;
 
+    selectedRunIds.value = extractRunIdsFromQuery(route.query);
+    selectedVats.value = extractVatsFromQuery(route.query);
+
     if (!context.value.data.interactions.length) renderNoResultMessage();
     else {
-      selectedRunIds.value = extractRunIdsFromQuery(route.query);
-      selectedVats.value = extractVatsFromQuery(route.query);
-
       const code = generateMermaidSequenceDiagram(
         context.value.data.interactions,
         context.value.data.vats
