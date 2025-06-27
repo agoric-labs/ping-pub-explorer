@@ -284,7 +284,7 @@ const generateParticipants = (vats: Vat[]): string =>
       (vat) =>
         `    participant ${getMermaidId(vat.vatID)} as ${
           vat.vatID !== vat.name
-            ? `${vat.vatID}:${truncate(vat.name.replace(ZCF_PREFIX_REGEX, ''))}`
+            ? `${vat.vatID}:${truncate(sanitizeVatName(vat.name))}`
             : vat.vatID
         }`
     )
@@ -334,6 +334,9 @@ export const renderDiagram = async ({
     `;
   }
 };
+
+export const sanitizeVatName = (vatName: Vat['name']) =>
+  vatName.replace(ZCF_PREFIX_REGEX, '');
 
 const truncate = (name: string, maxLength = 15) =>
   name.length > maxLength ? `${name.slice(0, maxLength)}...` : name;

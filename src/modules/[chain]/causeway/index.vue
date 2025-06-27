@@ -51,11 +51,12 @@ import VueSelect from 'vue-multiselect';
 import { type LocationQuery, useRoute, useRouter } from 'vue-router';
 
 import LoadingIcon from '@/icons/loading.svg';
-import WarningIcon from '@/icons/warning.svg?url';
+import WarningIcon from '@/icons/warning.svg?raw';
 import {
   generateMermaidSequenceDiagram,
   getSanitizedPageSize,
   renderDiagram,
+  sanitizeVatName,
 } from '@/libs/mermaid';
 import { useCauseway } from '@/stores/useCauseway';
 import type { Vat } from '@/stores/useCauseway';
@@ -88,7 +89,7 @@ const startTime = ref(
     ? ''
     : String(route.query.startTime)
 );
-const { status, data } = storeToRefs(causeway);
+const { context, vats } = storeToRefs(causeway);
 
 const extractAllValuesFromQueryForKey = (key: string, query: LocationQuery) =>
   (!query[key]
@@ -99,19 +100,20 @@ const extractAllValuesFromQueryForKey = (key: string, query: LocationQuery) =>
 
 const extractRunIdsFromQuery = (query: LocationQuery) => {
   const runIdsInQuery = extractAllValuesFromQueryForKey('runId', query);
-  if (!(status.value === LoadingStatus.Loaded && runIdsInQuery.length))
+  if (!(context.value.status === LoadingStatus.Loaded && runIdsInQuery.length))
     return [];
   const runIdsSet = new Set(runIdsInQuery);
 
-  return data.value.runIds.filter((runId) => runIdsSet.has(runId));
+  return context.value.data.runIds.filter((runId) => runIdsSet.has(runId));
 };
 
 const extractVatsFromQuery = (query: LocationQuery) => {
   const vatsInQuery = extractAllValuesFromQueryForKey('vat', query);
-  if (!(status.value === LoadingStatus.Loaded && vatsInQuery.length)) return [];
+  if (!(context.value.status === LoadingStatus.Loaded && vatsInQuery.length))
+    return [];
   const vatsSet = new Set(vatsInQuery);
 
-  return data.value.vats.filter(({ vatID }) => vatsSet.has(vatID));
+  return context.value.data.vats.filter(({ vatID }) => vatsSet.has(vatID));
 };
 
 const currentPage = computed(() =>
@@ -136,7 +138,7 @@ const inputsMeta = [
   },
 ];
 const totalPages = computed(() =>
-  Math.ceil(data.value.interactionsCount / routerPageSize.value)
+  Math.ceil(context.value.data.interactionsCount / routerPageSize.value)
 );
 
 const selectedRunIds = ref(extractRunIdsFromQuery(route.query));
@@ -172,7 +174,7 @@ const loadData = ({
   const startTimestamp = getTimestampFromDate(String(query.startTime || ''));
   const pageSize = getSanitizedPageSize(String(query.pageSize || ''));
 
-  causeway.loadData({
+  causeway.loadContextData({
     filters: {
       blockHeight: String(query.blockHeight || '').match(IS_NUMBER_REGEX)
         ? Number(blockHeight.value)
@@ -195,23 +197,44 @@ const onRunIdSelection = (value: Array<string>) =>
 
 const onVatSelection = (value: Array<Vat>) => (selectedVats.value = value);
 
+const renderNoResultMessage = () => {
+  if (!mermaidRef.value)
+    return console.error('[FATAL]: Container reference is undefined');
+
+  const ref = mermaidRef.value;
+
+  ref.innerHTML = `
+    <div class="dark:text-gray-400 flex flex-col gap-y-4 h-full items-center justify-center text-gray-500 w-full">
+      ${WarningIcon}
+      <h4>${t(`${LOCALE_PREFIX}.no-data-found-message`)}</h4>
+    </div>
+  `;
+  ref.querySelector('svg')?.classList.add('h-16', 'w-16');
+};
+
 onMounted(() => {
-  (blockHeight.value ||
-    endTime.value ||
-    extractAllValuesFromQueryForKey('runId', route.query).length ||
-    startTime.value ||
-    extractAllValuesFromQueryForKey('vat', route.query).length) &&
-    loadData({
-      loadCount: true,
-      loadRunIds: true,
-      loadVats: true,
-      query: route.query,
-    });
+  {
+    if (
+      blockHeight.value ||
+      endTime.value ||
+      extractAllValuesFromQueryForKey('runId', route.query).length ||
+      startTime.value ||
+      extractAllValuesFromQueryForKey('vat', route.query).length
+    )
+      loadData({
+        loadCount: true,
+        loadRunIds: true,
+        loadVats: true,
+        query: route.query,
+      });
+
+    causeway.loadVats({});
+  }
   containerHeight.value = mermaidRef.value?.getBoundingClientRect().height || 0;
 });
 
 watch(
-  status,
+  () => context.value.status,
   (newStatus) => {
     if (newStatus === LoadingStatus.Loading)
       document.body.classList.add('h-screen', 'overflow-hidden');
@@ -219,28 +242,21 @@ watch(
 
     if (newStatus !== LoadingStatus.Loaded) return;
 
-    if (!data.value.interactions.length)
-      mermaidRef.value &&
-        (mermaidRef.value.innerHTML = `
-          <div class="dark:text-gray-400 flex flex-col gap-y-4 h-full items-center justify-center text-gray-500 w-full">
-            <img class="h-16 w-16" src="${WarningIcon}" />
-            <h4>${t(`${LOCALE_PREFIX}.no-data-found-message`)}</h4>
-          </div>
-        `);
+    if (!context.value.data.interactions.length) renderNoResultMessage();
     else {
       selectedRunIds.value = extractRunIdsFromQuery(route.query);
       selectedVats.value = extractVatsFromQuery(route.query);
 
       const code = generateMermaidSequenceDiagram(
-        data.value.interactions,
-        data.value.vats
+        context.value.data.interactions,
+        context.value.data.vats
       );
       renderDiagram({
         code,
         containerHeight: containerHeight.value,
-        interactions: data.value.interactions,
+        interactions: context.value.data.interactions,
         mermaidRef,
-        vats: data.value.vats,
+        vats: context.value.data.vats,
       });
     }
   },
@@ -303,7 +319,10 @@ watch(
     <div
       class="absolute bg-base-200 flex h-screen inset-0 items-center justify-center opacity-60 w-screen"
       style="z-index: 100"
-      v-if="status === LoadingStatus.Loading"
+      v-if="
+        context.status === LoadingStatus.Loading ||
+        vats.status === LoadingStatus.Loading
+      "
     >
       <LoadingIcon class="animate-spin fill-primary h-8 w-8" />
     </div>
@@ -333,8 +352,16 @@ watch(
             multiple
             track-by="vatID"
             :close-on-select="false"
-            :disabled="!(status === LoadingStatus.Loaded && !!data.vats.length)"
-            :options="data.vats"
+            :disabled="
+              !(vats.status === LoadingStatus.Loaded && !!vats.data.length)
+            "
+            :options="
+              vats.data.map(({ name, vatID, ...rest }) => ({
+                name: `${vatID}: ${sanitizeVatName(name)}`,
+                vatID,
+                ...rest,
+              }))
+            "
             :modelValue="selectedVats"
             @update:modelValue="onVatSelection"
           >
@@ -355,9 +382,12 @@ watch(
             multiple
             :close-on-select="false"
             :disabled="
-              !(status === LoadingStatus.Loaded && !!data.runIds.length)
+              !(
+                context.status === LoadingStatus.Loaded &&
+                !!context.data.runIds.length
+              )
             "
-            :options="data.runIds"
+            :options="context.data.runIds"
             :modelValue="selectedRunIds"
             @update:modelValue="onRunIdSelection"
           >
@@ -373,7 +403,7 @@ watch(
       <button
         class="btn btn-primary max-w-32 w-full"
         @click="() => applyFilters()"
-        :disabled="status === LoadingStatus.Loading"
+        :disabled="context.status === LoadingStatus.Loading"
       >
         {{ $t(`${LOCALE_PREFIX}.fetch-button-label`) }}
       </button>

@@ -28,14 +28,21 @@ export type Interaction = {
   type: string;
 };
 
-type State = {
-  data: {
-    interactions: Array<Interaction>;
-    interactionsCount: number;
-    runIds: Array<string>;
-    vats: Array<Vat>;
-  };
+type Loadable<T> = {
+  data: T;
   status: LoadingStatus;
+};
+
+type State = {
+  context: Loadable<{
+    interactions: Awaited<ReturnType<typeof getInteractions>>;
+    interactionsCount: Awaited<
+      ReturnType<typeof getInteractionsCount>
+    >['interactionsCount'];
+    runIds: Awaited<ReturnType<typeof getRunIds>>;
+    vats: Awaited<ReturnType<typeof getVats>>;
+  }>;
+  vats: Loadable<Awaited<ReturnType<typeof getVats>>>;
 };
 
 export type Vat = {
@@ -52,9 +59,26 @@ const convertFiltersToQueryParameters = (filters: Filters) =>
     .filter(Boolean)
     .join('&');
 
+const getInteractions = async (filters: Filters) =>
+  get<Array<Interaction>>(
+    `${API_BASE}/interactions?${convertFiltersToQueryParameters(filters)}`
+  );
+const getInteractionsCount = async (filters: Filters) =>
+  get<{ interactionsCount: number }>(
+    `${API_BASE}/interactions/count?${convertFiltersToQueryParameters(filters)}`
+  );
+const getRunIds = async (filters: Filters) =>
+  get<Array<string>>(
+    `${API_BASE}/run-ids?${convertFiltersToQueryParameters(filters)}`
+  );
+const getVats = async (filters: Filters) =>
+  get<Array<Vat>>(
+    `${API_BASE}/vats?${convertFiltersToQueryParameters(filters)}`
+  );
+
 export const useCauseway = defineStore('causeway', {
   actions: {
-    async loadData({
+    async loadContextData({
       filters,
       loadCount,
       loadRunIds,
@@ -65,60 +89,63 @@ export const useCauseway = defineStore('causeway', {
       loadRunIds: boolean;
       loadVats: boolean;
     }) {
-      if (this.$state.status === LoadingStatus.Loading)
+      if (this.$state.context.status === LoadingStatus.Loading)
         return console.error(
           `[FATAL]: Attempted network call when a previous call is already in progress`
         );
 
-      this.$state.status = LoadingStatus.Loading;
+      this.$state.context.status = LoadingStatus.Loading;
 
       const [interactions, { interactionsCount }, runIds, vats] =
         await Promise.all([
-          this.loadInteractions(filters),
+          getInteractions(filters),
           loadCount
-            ? this.loadInteractionsCount(filters)
+            ? getInteractionsCount(filters)
             : Promise.resolve({
-                interactionsCount: this.$state.data.interactionsCount,
+                interactionsCount: this.$state.context.data.interactionsCount,
               }),
           loadRunIds
-            ? this.loadRunIds(filters)
-            : Promise.resolve(this.$state.data.runIds),
+            ? getRunIds(filters)
+            : Promise.resolve(this.$state.context.data.runIds),
           loadVats
-            ? this.loadVats(filters)
-            : Promise.resolve(this.$state.data.vats),
+            ? getVats(filters)
+            : Promise.resolve(this.$state.context.data.vats),
         ]);
 
-      this.$state.data = {
-        interactions,
-        interactionsCount,
-        runIds,
-        vats: vats.sort(
-          ({ vatID: firstVatID }, { vatID: secondVatID }) =>
-            Number(EXTRACT_VAT_ID_REGEX.exec(firstVatID)![1]) -
-            Number(EXTRACT_VAT_ID_REGEX.exec(secondVatID)![1])
-        ),
+      this.$state.context = {
+        data: {
+          interactions,
+          interactionsCount,
+          runIds,
+          vats: vats.sort(
+            ({ vatID: firstVatID }, { vatID: secondVatID }) =>
+              Number(EXTRACT_VAT_ID_REGEX.exec(firstVatID)![1]) -
+              Number(EXTRACT_VAT_ID_REGEX.exec(secondVatID)![1])
+          ),
+        },
+        status: LoadingStatus.Loaded,
       };
-      this.$state.status = LoadingStatus.Loaded;
     },
-    loadInteractions: async (filters: Filters) =>
-      get<State['data']['interactions']>(
-        `${API_BASE}/interactions?${convertFiltersToQueryParameters(filters)}`
-      ),
-    loadInteractionsCount: async (filters: Filters) =>
-      get<{ interactionsCount: State['data']['interactionsCount'] }>(
-        `${API_BASE}/interactions/count?${convertFiltersToQueryParameters(filters)}`
-      ),
-    loadRunIds: async (filters: Filters) =>
-      get<State['data']['runIds']>(
-        `${API_BASE}/run-ids?${convertFiltersToQueryParameters(filters)}`
-      ),
-    loadVats: async (filters: Filters) =>
-      get<State['data']['vats']>(
-        `${API_BASE}/vats?${convertFiltersToQueryParameters(filters)}`
-      ),
+    async loadVats(filters: Filters) {
+      this.$state.vats.status = LoadingStatus.Loading;
+      const vats = await getVats(filters);
+      this.$state.vats.status = LoadingStatus.Loaded;
+      this.$state.vats.data = vats;
+    },
   },
   state: (): State => ({
-    data: { interactions: [], interactionsCount: 0, runIds: [], vats: [] },
-    status: LoadingStatus.Empty,
+    context: {
+      data: {
+        interactions: [],
+        interactionsCount: 0,
+        runIds: [],
+        vats: [],
+      },
+      status: LoadingStatus.Empty,
+    },
+    vats: {
+      data: [],
+      status: LoadingStatus.Empty,
+    },
   }),
 });
