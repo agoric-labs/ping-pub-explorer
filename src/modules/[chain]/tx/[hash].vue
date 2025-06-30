@@ -1,42 +1,56 @@
 <script lang="ts" setup>
-import { useBaseStore, useBlockchain, useFormatter } from '@/stores';
-import DynamicComponent from '@/components/dynamic/DynamicComponent.vue';
-import { computed, ref } from '@vue/reactivity';
-import type { Tx, TxResponse } from '@/types';
-
+import { watch } from 'vue';
 import { JsonViewer } from 'vue3-json-viewer';
-// if you used v1.0.5 or latster ,you should add import "vue3-json-viewer/dist/index.css"
 import 'vue3-json-viewer/dist/index.css';
+
+import DynamicComponent from '@/components/dynamic/DynamicComponent.vue';
+import { BRIDGE_ID, WALLET_SPEND_ACTION_MESSAGE } from '@/constants';
+import { useBaseStore, useBlockchain, useFormatter } from '@/stores';
+import { getRunIdsForTransactionId } from '@/stores/useCauseway';
+import type { Tx, TxResponse } from '@/types';
+import { computed, ref } from '@vue/reactivity';
 
 const props = defineProps(['hash', 'chain']);
 
-const blockchain = useBlockchain();
 const baseStore = useBaseStore();
+const blockchain = useBlockchain();
 const format = useFormatter();
+const runIds = ref<Awaited<ReturnType<typeof getRunIdsForTransactionId>>>([]);
 const tx = ref(
   {} as {
     tx: Tx;
     tx_response: TxResponse;
   }
 );
-if (props.hash) {
-  blockchain.rpc.getTx(props.hash).then((x) => (tx.value = x));
-}
-const messages = computed(() => {
-  return (
-    tx.value.tx?.body?.messages.map((x) => {
-      if (x.packet?.data) {
+
+if (props.hash) blockchain.rpc.getTx(props.hash).then((x) => (tx.value = x));
+
+const messages = computed(
+  () =>
+    tx.value.tx?.body.messages.map((x) => {
+      if (x.packet?.data)
         // @ts-ignore
         x.message = format.base64ToString(x.packet.data);
-      }
       return x;
     }) || []
-  );
-});
+);
+
+watch(
+  tx,
+  (transaction) =>
+    transaction.tx?.body.messages.some(
+      (message) => message['@type'] === WALLET_SPEND_ACTION_MESSAGE
+    ) &&
+    getRunIdsForTransactionId({
+      sourceTrigger: BRIDGE_ID.WALLET,
+      transactionId: props.hash,
+    }).then((_runIds) => (runIds.value = _runIds))
+);
 </script>
+
 <template>
-  <div>
-    <div class="tabs tabs-boxed bg-transparent mb-4">
+  <div class="flex flex-col gap-y-4 w-full">
+    <div class="tabs tabs-boxed bg-transparent">
       <RouterLink
         class="tab text-gray-400 uppercase"
         :to="`/${chain}/tx/?tab=recent`"
@@ -50,11 +64,17 @@ const messages = computed(() => {
       <a class="tab text-gray-400 uppercase tab-active">Transaction</a>
     </div>
 
-    <div
-      v-if="tx.tx_response"
-      class="bg-base-100 px-4 pt-3 pb-4 rounded shadow mb-4"
-    >
-      <h2 class="card-title truncate mb-2">{{ $t('tx.title') }}</h2>
+    <div v-if="tx.tx_response" class="bg-base-100 gap-y-2 p-4 rounded shadow">
+      <div class="flex items-center justify-between w-full">
+        <h2 class="card-title truncate">{{ $t('tx.title') }}</h2>
+        <RouterLink
+          :to="`/${blockchain.chainName}/causeway?${runIds.map((runId) => `runId=${runId}`).join('&')}`"
+          class="btn btn-primary btn-sm p-1"
+          v-if="!!runIds.length"
+        >
+          {{ $t('causeway.visualize-block-label') }}
+        </RouterLink>
+      </div>
       <div class="overflow-hidden">
         <table class="table text-sm">
           <tbody>
@@ -133,7 +153,7 @@ const messages = computed(() => {
 
     <div
       v-if="tx.tx_response"
-      class="bg-base-100 px-4 pt-3 pb-4 rounded shadow mb-4"
+      class="bg-base-100 px-4 pt-3 pb-4 rounded shadow"
     >
       <h2 class="card-title truncate mb-2">
         {{ $t('account.messages') }}: ({{ messages.length }})

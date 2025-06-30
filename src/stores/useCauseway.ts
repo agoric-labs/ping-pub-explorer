@@ -70,6 +70,17 @@ const getInteractionsCount = async (filters: Filters) =>
     `${API_BASE}/interactions/count?${convertFiltersToQueryParameters(filters)}`
   );
 
+export const getRunIdsForTransactionId = async ({
+  sourceTrigger,
+  transactionId,
+}: {
+  sourceTrigger?: string;
+  transactionId: string;
+}) =>
+  get<Array<string>>(
+    `${API_BASE}/transaction/${transactionId}/run-id?${sourceTrigger ? `source=${sourceTrigger}` : ''}`
+  );
+
 const getRunIds = async (filters: Filters) =>
   get<Array<string>>(
     `${API_BASE}/run-ids?${convertFiltersToQueryParameters(filters)}`
