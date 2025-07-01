@@ -68,7 +68,7 @@ watch(
       <div class="flex items-center justify-between w-full">
         <h2 class="card-title truncate">{{ $t('tx.title') }}</h2>
         <RouterLink
-          :to="`/${blockchain.chainName}/causeway?${runIds.map((runId) => `runId=${runId}`).join('&')}`"
+          :to="`/${blockchain.chainName}/causeway?blockHeight=${tx.tx_response?.height}&${runIds.map((runId) => `runId=${runId}`).join('&')}`"
           class="btn btn-primary btn-sm p-1"
           v-if="!!runIds.length"
         >

@@ -1,18 +1,15 @@
 import { defineStore } from 'pinia';
-import {
-  useDashboard,
-  type ChainConfig,
-  type Endpoint,
-  EndpointType,
-} from './useDashboard';
+import { useRouter } from 'vue-router';
+
 import type {
   NavGroup,
   NavLink,
   NavSectionTitle,
   VerticalNavItems,
 } from '@/layouts/types';
-import { useRouter } from 'vue-router';
 import { CosmosRestClient } from '@/libs/client';
+import { hexToRgb, rgbToHsl } from '@/libs/utils';
+import { useBlockModule } from '@/modules/[chain]/block/block';
 import {
   useBankStore,
   useBaseStore,
@@ -21,10 +18,13 @@ import {
   useMintStore,
   useStakingStore,
   useWalletStore,
-} from '.';
-import { useBlockModule } from '@/modules/[chain]/block/block';
-import { DEFAULT } from '@/libs';
-import { hexToRgb, rgbToHsl } from '@/libs/utils';
+} from '@/stores';
+import {
+  EndpointType,
+  useDashboard,
+  type ChainConfig,
+  type Endpoint,
+} from '@/stores/useDashboard';
 
 export const useBlockchain = defineStore('blockchain', {
   state: () => {
@@ -43,7 +43,6 @@ export const useBlockchain = defineStore('blockchain', {
   getters: {
     current(): ChainConfig | undefined {
       const chain = this.dashboard.chains[this.chainName];
-      // update chain config with dynamic updated sdk version
       const sdkversion = localStorage.getItem(`sdk_version_${this.chainName}`);
       if (sdkversion && chain?.versions) {
         chain.versions.cosmosSdk = sdkversion;
@@ -85,10 +84,11 @@ export const useBlockchain = defineStore('blockchain', {
             children: routes
               .filter((x) => x.meta.i18n) // defined menu name
               .filter(
+                // filter none-custom module
                 (x) =>
                   !this.current?.features ||
                   this.current.features.includes(String(x.meta.i18n))
-              ) // filter none-custom module
+              )
               .map((x) => ({
                 title: `module.${x.meta.i18n}`,
                 to: { path: x.path.replace(':chain', this.chainName) },

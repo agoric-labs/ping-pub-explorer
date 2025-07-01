@@ -56,7 +56,7 @@ html[data-theme='dark'] {
 }
 
 .multiselect__content-wrapper {
-  @apply border-gray-100 dark:border-gray-700;
+  @apply border-gray-100 dark:border-gray-700 no-scrollbar;
 }
 
 .multiselect__input, .multiselect__placeholder {

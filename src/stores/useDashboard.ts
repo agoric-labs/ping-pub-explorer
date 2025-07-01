@@ -88,12 +88,7 @@ export interface ChainConfig {
     average: number;
     high: number;
   };
-  faucet?: {
-    amount: string;
-    ip_limit: number;
-    address_limit: number;
-    fees: string;
-  };
+  faucet?: LocalConfig['faucet'];
 }
 
 export interface LocalConfig {
@@ -130,10 +125,10 @@ export interface LocalConfig {
   };
   keplr_features: string[];
   faucet?: {
-    amount: string;
-    ip_limit: number;
     address_limit: number;
+    amount: string;
     fees: string;
+    ip_limit: number;
   };
 }
 
@@ -154,8 +149,31 @@ function apiConverter(api: any[]) {
 }
 
 export function fromLocal(lc: LocalConfig): ChainConfig {
-  const conf = {} as ChainConfig;
-  if (lc.assets && Array.isArray(lc.assets)) {
+  const conf = {
+    bech32ConsensusPrefix: lc.consensus_prefix ?? lc.addr_prefix + 'valcons',
+    bech32Prefix: lc.addr_prefix,
+    chainName: lc.chain_name,
+    coinType: lc.coin_type,
+    endpoints: {
+      rest: apiConverter(lc.api),
+      restDirect: apiConverter(lc.apiDirect || lc.api),
+      rpc: apiConverter(lc.rpc),
+      rpcDirect: apiConverter(lc.rpcDirect || lc.rpc),
+      grpc: apiConverter(lc.grpc),
+    },
+    faucet: lc.faucet,
+    features: lc.features,
+    keplrFeatures: lc.keplr_features,
+    keplrPriceStep: lc.keplr_price_step,
+    logo: lc.logo,
+    prettyName: lc.registry_name || lc.chain_name,
+    themeColor: lc.theme_color,
+    versions: {
+      cosmosSdk: lc.sdk_version,
+    },
+  } as ChainConfig;
+
+  if (lc.assets && Array.isArray(lc.assets))
     conf.assets = lc.assets.map((x) => ({
       name: x.base,
       base: x.base,
@@ -169,34 +187,12 @@ export function fromLocal(lc: LocalConfig): ChainConfig {
         { denom: x.symbol.toLowerCase(), exponent: Number(x.exponent) },
       ],
     }));
-  }
-  conf.versions = {
-    cosmosSdk: lc.sdk_version,
-  };
-  conf.bech32Prefix = lc.addr_prefix;
-  conf.bech32ConsensusPrefix =
-    lc.consensus_prefix ?? lc.addr_prefix + 'valcons';
-  conf.chainName = lc.chain_name;
-  conf.coinType = lc.coin_type;
-  conf.prettyName = lc.registry_name || lc.chain_name;
-  conf.endpoints = {
-    rest: apiConverter(lc.api),
-    restDirect: apiConverter(lc.apiDirect || lc.api),
-    rpc: apiConverter(lc.rpc),
-    rpcDirect: apiConverter(lc.rpcDirect || lc.rpc),
-    grpc: apiConverter(lc.grpc),
-  };
-  if (lc.provider_chain) {
+
+  if (lc.provider_chain)
     conf.providerChain = {
       api: apiConverter(lc.provider_chain.api),
     };
-  }
-  conf.features = lc.features;
-  conf.logo = lc.logo;
-  conf.keplrFeatures = lc.keplr_features;
-  conf.keplrPriceStep = lc.keplr_price_step;
-  conf.themeColor = lc.theme_color;
-  conf.faucet = lc.faucet;
+
   return conf;
 }
 

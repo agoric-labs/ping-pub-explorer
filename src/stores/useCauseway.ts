@@ -7,7 +7,9 @@ export type Filters = Partial<{
   blockHeight: number;
   currentPage: number;
   endTime: string;
+  id: string;
   limit: string;
+  proposalId: string;
   runIds: string;
   startTime: string;
   vats: string;
@@ -32,6 +34,22 @@ export type Interaction = {
 type Loadable<T> = {
   data: T;
   status: LoadingStatus;
+};
+
+export type Run = {
+  blockHeight: number;
+  blockTime: number;
+  computrons: number;
+  id: string;
+  number: string;
+  proposalId: string;
+  time: number;
+  triggerBundleHash: string;
+  triggerMsgIdx: number;
+  triggerSender: string;
+  triggerSource: string;
+  triggerTxHash: string;
+  triggerType: string;
 };
 
 type State = {
@@ -79,6 +97,11 @@ export const getRunIdsForTransactionId = async ({
 }) =>
   get<Array<string>>(
     `${API_BASE}/transaction/${transactionId}/run-id?${sourceTrigger ? `source=${sourceTrigger}` : ''}`
+  );
+
+export const getRuns = async (filters: Filters) =>
+  get<Array<Run>>(
+    `${API_BASE}/run?${convertFiltersToQueryParameters(filters)}`
   );
 
 const getRunIds = async (filters: Filters) =>

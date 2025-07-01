@@ -1,23 +1,25 @@
 <script lang="ts" setup>
-import AdBanner from '@/components/ad/AdBanner.vue';
-import { get } from '@/libs';
-import { useBlockchain, useFormatter, useGovStore } from '@/stores';
 import { ref, onMounted, computed } from 'vue';
 
-const chainStore = useBlockchain();
-const format = useFormatter();
+import AdBanner from '@/components/ad/AdBanner.vue';
+import { get } from '@/libs';
+import { useBlockchain, useFormatter } from '@/stores';
+
 interface FaucetResponse {
   status: string;
   result: any;
   message: string;
 }
 
+const chainStore = useBlockchain();
+const format = useFormatter();
+
 const address = ref('');
-const faucet = ref('');
 const balances = ref([]);
+const configChecker = ref('');
+const faucet = ref('');
 const faucetModal = ref(false);
 const ret = ref({} as FaucetResponse);
-const configChecker = ref('');
 
 const checklist = computed(() => {
   const endpoint = chainStore.current?.endpoints?.rest;
@@ -54,10 +56,8 @@ const faucetUrl = computed(() => {
 
 function claim() {
   ret.value = {} as FaucetResponse;
-  const prefix = chainStore.current?.bech32Prefix || 'cosmos';
   if (!address.value) return;
   faucetModal.value = true;
-  // @ts-ignore
   get(`${faucetUrl.value}/send/${address.value}`).then(
     (res: FaucetResponse) => {
       console.log(res);
@@ -83,6 +83,7 @@ onMounted(() => {
   }
 });
 </script>
+
 <template>
   <div>
     <div class="flex flex-col items-center justify-center mb-6 mt-14 gap-4">
@@ -128,7 +129,7 @@ onMounted(() => {
         </svg>
       </div>
       <h1 class="text-primary text-3xl md:!text-6xl font-bold capitalize">
-        {{ chainStore.chainName }} Faucet
+        {{ `${chainStore.chainName} Faucet` }}
       </h1>
     </div>
     <div class="bg-base-100 my-5 px-4 pt-3 pb-4 rounded shadow">
@@ -213,9 +214,7 @@ onMounted(() => {
           >
         </div>
         <p class="py-2">
-          <div>
-            <AdBanner id="popup-ad" unit="popup" />
-          </div>
+          <AdBanner id="popup-ad" unit="popup" />
         </p>
       </div>
     </div>

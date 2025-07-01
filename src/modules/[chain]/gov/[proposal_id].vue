@@ -1,7 +1,12 @@
 <script lang="ts" setup>
+import { fromBech32, toHex } from '@cosmjs/encoding';
 import { computed } from '@vue/reactivity';
 import MdEditor from 'md-editor-v3';
+import { onMounted, reactive, ref } from 'vue';
+
+import Countdown from '@/components/Countdown.vue';
 import ObjectElement from '@/components/dynamic/ObjectElement.vue';
+import PaginationBar from '@/components/PaginationBar.vue';
 import {
   useBaseStore,
   useBlockchain,
@@ -10,6 +15,7 @@ import {
   useStakingStore,
   useTxDialog,
 } from '@/stores';
+import { getRuns, type Run } from '@/stores/useCauseway';
 import {
   PageRequest,
   type GovProposal,
@@ -17,18 +23,17 @@ import {
   type PaginatedProposalDeposit,
   type Pagination,
 } from '@/types';
-import { ref, reactive } from 'vue';
-import Countdown from '@/components/Countdown.vue';
-import PaginationBar from '@/components/PaginationBar.vue';
-import { fromBech32, toHex } from '@cosmjs/encoding';
 
 const props = defineProps(['proposal_id', 'chain']);
-const proposal = ref({} as GovProposal);
-const format = useFormatter();
-const store = useGovStore();
-const dialog = useTxDialog();
-const stakingStore = useStakingStore();
+
 const chainStore = useBlockchain();
+const deposit = ref({} as PaginatedProposalDeposit);
+const run = ref<Run>();
+const dialog = useTxDialog();
+const format = useFormatter();
+const proposal = ref({} as GovProposal);
+const stakingStore = useStakingStore();
+const store = useGovStore();
 
 store.fetchProposal(props.proposal_id).then((res) => {
   let proposalDetail = reactive(res.proposal);
@@ -82,6 +87,7 @@ function addCurrentParams(res: any) {
     proposal.value.content.current = [res.params];
   }
 }
+
 const color = computed(() => {
   if (proposal.value.status === 'PROPOSAL_STATUS_PASSED') {
     return 'success';
@@ -90,6 +96,7 @@ const color = computed(() => {
   }
   return '';
 });
+
 const status = computed(() => {
   if (proposal.value.status) {
     return proposal.value.status.replace('PROPOSAL_STATUS_', '');
@@ -97,7 +104,6 @@ const status = computed(() => {
   return '';
 });
 
-const deposit = ref({} as PaginatedProposalDeposit);
 store.fetchProposalDeposits(props.proposal_id).then((x) => (deposit.value = x));
 
 const votes = ref({} as GovVote[]);
@@ -187,6 +193,7 @@ const abstain = computed(() => {
   }
   return 0;
 });
+
 const processList = computed(() => {
   return [
     { name: 'Turnout', value: turnout.value, class: 'bg-info' },
@@ -229,23 +236,36 @@ function metaItem(metadata: string | undefined): {
   }
   return { title: metadata, summary: '' };
 }
+
+onMounted(() =>
+  getRuns({ proposalId: props.proposal_id }).then(
+    (runs) => (run.value = runs.find(Boolean))
+  )
+);
 </script>
 
 <template>
-  <div>
-    <div class="bg-base-100 px-4 pt-3 pb-4 rounded mb-4 shadow">
-      <h2
+  <div class="flex flex-col gap-y-4 w-full">
+    <div class="bg-base-100 px-4 pt-3 pb-4 rounded shadow">
+      <div
         class="card-title flex flex-col md:!justify-between md:!flex-row mb-2"
       >
-        <p class="truncate w-full">
+        <h2 class="truncate">
           {{ proposal_id }}.
           {{
             proposal.title ||
             proposal.content?.title ||
             metaItem(proposal?.metadata)?.title
           }}
-        </p>
-        <div
+        </h2>
+        <RouterLink
+          :to="`/${chainStore.chainName}/causeway?runId=${run.id}`"
+          class="btn btn-primary btn-sm p-1"
+          v-if="!!run"
+        >
+          {{ $t('causeway.visualize-block-label') }}
+        </RouterLink>
+        <h2
           class="badge badge-ghost"
           :class="
             color === 'success'
@@ -256,11 +276,11 @@ function metaItem(metadata: string | undefined): {
           "
         >
           {{ status }}
-        </div>
-      </h2>
-      <div class="">
-        <ObjectElement :value="proposal.content" />
+        </h2>
       </div>
+
+      <ObjectElement :value="proposal.content" />
+
       <div
         v-if="
           (proposal.summary && !proposal.content?.description) ||
@@ -275,12 +295,11 @@ function metaItem(metadata: string | undefined): {
           "
           previewOnly
           class="md-editor-recover"
-        ></MdEditor>
+        />
       </div>
     </div>
-    <!-- grid lg:!!grid-cols-3 auto-rows-max-->
-    <!-- flex-col lg:!!flex-row flex -->
-    <div class="gap-4 mb-4 grid lg:!!grid-cols-3 auto-rows-max">
+
+    <div class="gap-4 grid lg:!!grid-cols-3 auto-rows-max">
       <!-- flex-1 -->
       <div class="bg-base-100 px-4 pt-3 pb-4 rounded shadow">
         <h2 class="card-title mb-1">{{ $t('gov.tally') }}</h2>
@@ -416,7 +435,7 @@ function metaItem(metadata: string | undefined): {
       </div>
     </div>
 
-    <div class="bg-base-100 px-4 pt-3 pb-4 rounded mb-4 shadow">
+    <div class="bg-base-100 px-4 pt-3 pb-4 rounded shadow">
       <h2 class="card-title">{{ $t('gov.votes') }}</h2>
       <div class="overflow-x-auto">
         <table class="table w-full table-zebra">
