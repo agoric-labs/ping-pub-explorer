@@ -79,6 +79,9 @@ html[data-theme='dark'] {
   border: none !important;
   @apply !flex !items-center !p-2;
 }
+.no-outline {
+  outline-width: 0px;
+}
 @tailwind utilities;
 .no-scrollbar::-webkit-scrollbar {
   display: none;

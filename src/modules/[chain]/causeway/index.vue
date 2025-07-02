@@ -50,6 +50,8 @@ import { useI18n } from 'vue-i18n';
 import VueSelect from 'vue-multiselect';
 import { type LocationQuery, useRoute, useRouter } from 'vue-router';
 
+import CrossIcon from '@/icons/cross.svg';
+import FullscreenIcon from '@/icons/fullscreen.svg';
 import LoadingIcon from '@/icons/loading.svg';
 import WarningIcon from '@/icons/warning.svg?raw';
 import {
@@ -84,6 +86,7 @@ const endTime = ref(
 );
 const mermaidRef = ref<HTMLDivElement | null>(null);
 const pageSize = ref(String(routerPageSize.value));
+const showFullScreen = ref(false);
 const startTime = ref(
   isNaN(getTimestampFromDate(String(route.query.startTime || '')))
     ? ''
@@ -441,9 +444,29 @@ watch(
     </div>
 
     <div
-      class="bg-transparent border border-gray-L300 border-solid grow max-w-full no-scrollbar overflow-scroll rounded-sm shrink"
-      ref="mermaidRef"
-      :style="`padding: ${MERMAID_CONTAINER_PADDING}px`"
-    />
+      :class="`${
+        context.status === LoadingStatus.Loading ||
+        vats.status === LoadingStatus.Loading
+          ? 'opacity-10'
+          : 'opacity-100'
+      } bg-gray-100 dark:bg-gray-dark-100 grow rounded-sm shrink ${showFullScreen ? 'absolute left-0 min-h-screen right-0 top-0 w-screen' : 'border border-base-100 border-solid dark:border-white max-w-full relative'}`"
+      :style="`padding: ${MERMAID_CONTAINER_PADDING}px; z-index: 100`"
+    >
+      <button
+        className="absolute no-outline p-4 right-0 top-0"
+        @click="() => (showFullScreen = !showFullScreen)"
+        :disabled="
+          context.status === LoadingStatus.Loading ||
+          vats.status === LoadingStatus.Loading
+        "
+      >
+        <CrossIcon class="fill-primary h-4 w-4" v-if="showFullScreen" />
+        <FullscreenIcon class="fill-primary h-4 w-4" v-else />
+      </button>
+      <div
+        class="bg-transparent grow no-scrollbar overflow-scroll shrink"
+        ref="mermaidRef"
+      />
+    </div>
   </div>
 </template>
