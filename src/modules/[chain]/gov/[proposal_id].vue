@@ -15,7 +15,7 @@ import {
   useStakingStore,
   useTxDialog,
 } from '@/stores';
-import { getRuns, type Run } from '@/stores/useCauseway';
+import { API_BASE, getRuns, type Run } from '@/stores/useCauseway';
 import {
   PageRequest,
   type GovProposal,
@@ -265,6 +265,13 @@ onMounted(() =>
         >
           {{ $t('causeway.visualize-block-label') }}
         </RouterLink>
+        <a
+          :href="`${API_BASE}/run/logs?runId=${run.id}`"
+          class="btn btn-primary btn-sm p-1"
+          v-if="!!run"
+        >
+          {{ $t('causeway.proposal-logs-label') }}
+        </a>
         <h2
           class="badge badge-ghost"
           :class="

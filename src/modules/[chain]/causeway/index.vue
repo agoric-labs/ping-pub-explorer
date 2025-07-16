@@ -450,7 +450,14 @@ watch(
           ? 'opacity-10'
           : 'opacity-100'
       } bg-gray-100 dark:bg-gray-dark-100 grow rounded-sm shrink ${showFullScreen ? 'absolute left-0 min-h-screen right-0 top-0 w-screen' : 'border border-base-100 border-solid dark:border-white max-w-full relative'}`"
-      :style="`padding: ${MERMAID_CONTAINER_PADDING}px; z-index: 100`"
+      :style="
+        [
+          `padding: ${MERMAID_CONTAINER_PADDING}px`,
+          showFullScreen && 'z-index: 100',
+        ]
+          .filter(Boolean)
+          .join('; ')
+      "
     >
       <button
         className="absolute no-outline p-4 right-0 top-0"

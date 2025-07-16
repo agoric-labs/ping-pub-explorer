@@ -70,7 +70,7 @@ export type Vat = {
   time: number;
 };
 
-const API_BASE = '/rest/causeway';
+export const API_BASE = '/rest/causeway';
 
 const convertFiltersToQueryParameters = (filters: Filters) =>
   Object.entries(filters)
