@@ -6,7 +6,7 @@ import 'vue3-json-viewer/dist/index.css';
 import DynamicComponent from '@/components/dynamic/DynamicComponent.vue';
 import { BRIDGE_ID, WALLET_SPEND_ACTION_MESSAGE } from '@/constants';
 import { useBaseStore, useBlockchain, useFormatter } from '@/stores';
-import { getRunIdsForTransactionId } from '@/stores/useCauseway';
+import { API_BASE, getRunIdsForTransactionId } from '@/stores/useCauseway';
 import type { Tx, TxResponse } from '@/types';
 import { computed, ref } from '@vue/reactivity';
 
@@ -74,6 +74,13 @@ watch(
         >
           {{ $t('causeway.visualize-block-label') }}
         </RouterLink>
+        <a
+          :href="`${API_BASE}/run/logs?runId=${runIds.find(Boolean)}`"
+          class="btn btn-primary btn-sm p-1"
+          v-if="!!runIds.length"
+        >
+          {{ $t('causeway.proposal-logs-label') }}
+        </a>
       </div>
       <div class="overflow-hidden">
         <table class="table text-sm">
