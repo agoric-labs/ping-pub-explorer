@@ -1,5 +1,8 @@
-node_modules/
 **/.vscode
-yarn-error.log
-dist
+
 .idea
+
+dist
+node_modules/
+scripts/neo4j
+yarn-error.log

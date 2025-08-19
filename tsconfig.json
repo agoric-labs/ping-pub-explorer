@@ -4,11 +4,11 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"],
-      "~/*": ["./*"],
+      "~/*": ["./*"]
     }
   },
   "extends": "@vue/tsconfig/tsconfig.json",
-  "include": ["colors.ts", "env.d.ts", "src/**/*", "src/**/*.vue"],
+  "include": ["colors.ts", "env.d.ts", "scripts", "src/**/*", "src/**/*.vue"],
   "references": [
     {
       "path": "./tsconfig.config.json"
