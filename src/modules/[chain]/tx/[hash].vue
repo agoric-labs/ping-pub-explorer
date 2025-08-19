@@ -4,7 +4,7 @@ import { JsonViewer } from 'vue3-json-viewer';
 import 'vue3-json-viewer/dist/index.css';
 
 import DynamicComponent from '@/components/dynamic/DynamicComponent.vue';
-import { BRIDGE_ID, WALLET_SPEND_ACTION_MESSAGE } from '@/constants';
+import { BRIDGE_ID } from '@/constants';
 import { useBaseStore, useBlockchain, useFormatter } from '@/stores';
 import { API_BASE, getRunIdsForTransactionId } from '@/stores/useCauseway';
 import type { Tx, TxResponse } from '@/types';
@@ -38,12 +38,14 @@ const messages = computed(
 watch(
   tx,
   (transaction) =>
-    transaction.tx?.body.messages.some(
-      (message) => message['@type'] === WALLET_SPEND_ACTION_MESSAGE
-    ) &&
+    !!transaction?.tx_response?.txhash &&
     getRunIdsForTransactionId({
-      sourceTrigger: BRIDGE_ID.WALLET,
-      transactionId: props.hash,
+      sourceTrigger: [
+        BRIDGE_ID.DIBC,
+        BRIDGE_ID.PROVISION,
+        BRIDGE_ID.WALLET,
+      ].join(','),
+      transactionId: transaction.tx_response.txhash,
     }).then((_runIds) => (runIds.value = _runIds))
 );
 </script>

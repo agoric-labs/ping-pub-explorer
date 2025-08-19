@@ -72,7 +72,9 @@ export type Vat = {
 
 export const API_BASE = '/rest/causeway';
 
-const convertFiltersToQueryParameters = (filters: Filters) =>
+const convertFiltersToQueryParameters = (
+  filters: Record<string, number | string | undefined>
+) =>
   Object.entries(filters)
     .map(([key, value]) => value && `${key}=${value}`)
     .filter(Boolean)
@@ -96,7 +98,7 @@ export const getRunIdsForTransactionId = async ({
   transactionId: string;
 }) =>
   get<Array<string>>(
-    `${API_BASE}/transaction/${transactionId}/run-id?${sourceTrigger ? `source=${sourceTrigger}` : ''}`
+    `${API_BASE}/transaction/${transactionId}/run-id?${convertFiltersToQueryParameters({ source: sourceTrigger })}`
   );
 
 export const getRuns = async (filters: Filters) =>
