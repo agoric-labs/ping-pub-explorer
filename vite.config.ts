@@ -1,6 +1,3 @@
-import { readdirSync } from 'node:fs';
-import type { Dirent } from 'node:fs';
-import { readFile, writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import { fileURLToPath, URL } from 'node:url';
 
@@ -14,36 +11,8 @@ import type { CommonServerOptions, UserConfigFnPromise } from 'vite';
 import Pages from 'vite-plugin-pages';
 import Layouts from 'vite-plugin-vue-layouts';
 import svgLoader from 'vite-svg-loader';
-//@ts-ignore
-import colors from './colors';
-
-interface Asset {
-  base: string;
-  coingecko_id: string;
-  exponent: string;
-  logo: string;
-  symbol: string;
-}
-
-interface ChainConfig {
-  addr_prefix: string;
-  api: Array<string>;
-  assets: Asset[];
-  chain_name: string;
-  coin_type: string;
-  coingecko: string;
-  faucet: {
-    host: string;
-  };
-  logo: string;
-  min_tx_fee: string;
-  rpc: Array<string>;
-  sdk_version: string;
-  theme_color: string;
-}
 
 const __fileName = fileURLToPath(import.meta.url);
-const ENCODING = 'utf-8';
 
 const __dirname = dirname(__fileName);
 
@@ -52,8 +21,6 @@ const configCreator: UserConfigFnPromise = async ({ command, mode }) => {
 
   if (!process.env.PORT && isNotBuildMode)
     throw Error(`Expected a number in PORT env, got '${process.env.PORT}'`);
-
-  if (isNotBuildMode) await updatePortsInChainConfigs();
 
   const serverConfig: CommonServerOptions = {
     host: true,
@@ -144,33 +111,6 @@ const configCreator: UserConfigFnPromise = async ({ command, mode }) => {
     },
     server: serverConfig,
   };
-};
-
-const updatePortsInChainConfig = async ({ name, path }: Dirent) => {
-  const filePath = `${path}/${name}`;
-  const fileContent: ChainConfig = JSON.parse(
-    await readFile(filePath, { encoding: ENCODING })
-  );
-  fileContent.api = fileContent.api.map(
-    () => `http://localhost:${process.env.PORT}/api`
-  );
-  fileContent.faucet.host = `/rest`;
-  fileContent.rpc = fileContent.rpc.map(
-    () => `http://localhost:${process.env.PORT}/rpc`
-  );
-  fileContent.theme_color = colors.primary;
-  return writeFile(filePath, JSON.stringify(fileContent, undefined, 4), {
-    encoding: ENCODING,
-  });
-};
-
-const updatePortsInChainConfigs = () => {
-  const chains = readdirSync(`${__dirname}/chains/mainnet`, {
-    withFileTypes: true,
-  });
-  return Promise.all(
-    chains.filter((entry) => entry.isFile()).map(updatePortsInChainConfig)
-  );
 };
 
 const config = defineConfig(configCreator);
