@@ -221,7 +221,11 @@ onMounted(() => chainStore.current && chainStore.current.faucet && balance());
       </div>
     </div>
 
-    <div class="modal" role="dialog">
+    <div
+      class="modal"
+      role="dialog"
+      :style="`opacity: ${faucetModal ? '1' : '0'}; pointer-events: ${faucetModal ? 'all' : 'none'}; visibility: ${faucetModal ? 'visible' : 'hidden'}`"
+    >
       <div class="modal-box">
         <div v-if="!!faucetResponse.errorMessage">
           <h3 class="font-bold text-red-500">Error</h3>
