@@ -154,7 +154,7 @@ const updatePortsInChainConfig = async ({ name, path }: Dirent) => {
   fileContent.api = fileContent.api.map(
     () => `http://localhost:${process.env.PORT}/api`
   );
-  fileContent.faucet.host = `http://localhost:${process.env.PORT}/rest`;
+  fileContent.faucet.host = `/rest`;
   fileContent.rpc = fileContent.rpc.map(
     () => `http://localhost:${process.env.PORT}/rpc`
   );
