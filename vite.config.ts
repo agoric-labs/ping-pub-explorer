@@ -32,6 +32,9 @@ interface ChainConfig {
   chain_name: string;
   coin_type: string;
   coingecko: string;
+  faucet: {
+    host: string;
+  };
   logo: string;
   min_tx_fee: string;
   rpc: Array<string>;
@@ -151,6 +154,7 @@ const updatePortsInChainConfig = async ({ name, path }: Dirent) => {
   fileContent.api = fileContent.api.map(
     () => `http://localhost:${process.env.PORT}/api`
   );
+  fileContent.faucet.host = `http://localhost:${process.env.PORT}/rest`;
   fileContent.rpc = fileContent.rpc.map(
     () => `http://localhost:${process.env.PORT}/rpc`
   );

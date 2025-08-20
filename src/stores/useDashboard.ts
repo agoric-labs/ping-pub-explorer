@@ -128,6 +128,7 @@ export interface LocalConfig {
     address_limit: number;
     amount: string;
     fees: string;
+    host?: string;
     ip_limit: number;
   };
 }

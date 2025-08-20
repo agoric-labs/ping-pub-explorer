@@ -22,6 +22,9 @@
     "chain_name": "agoric",
     "coin_type": "564",
     "coingecko": "agoric",
+    "faucet": {
+        "host": "http://localhost:8000/rest"
+    },
     "logo": "/agoric.png",
     "min_tx_fee": "8000",
     "rpc": [
