@@ -48,9 +48,7 @@ const faucetType = ref<keyof typeof FAUCET_TYPE>(DEFAULT_FAUCET_TYPE);
 
 const checklist = computed(() => {
   const endpoint = chainStore.current?.endpoints?.rest;
-  const bs =
-    !!balances.value.length &&
-    !balances.value.some(({ amount }) => Number(amount) <= 10);
+  const bs = !!balances.value.length;
   return [
     { title: 'Rest Endpoint', status: endpoint && endpoint[0].address !== '' },
     {
@@ -76,10 +74,12 @@ const balance = () =>
     .then((res) => {
       balances.value = res?.balance;
       faucet.value = res?.address;
-      balances.value = balances.value.map(({ amount, denom }) => ({
-        amount: String(BigInt(amount) / BigInt(1e6)),
-        denom,
-      }));
+      balances.value = balances.value
+        .map(({ amount, denom }) => ({
+          amount: String(BigInt(amount) / BigInt(1e6)),
+          denom,
+        }))
+        .filter(({ amount }) => Number(amount) >= 1);
     })
     .catch((err) => (configChecker.value = err?.toString()));
 
@@ -109,6 +109,8 @@ const claim = async () => {
       errorMessage,
       result: errorMessage ? '' : result,
     };
+
+    !errorMessage && balance();
   } catch (err) {
     faucetResponse.value = {
       errorMessage: err?.toString() || 'Unknown error',
