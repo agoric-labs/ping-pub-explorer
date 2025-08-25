@@ -106,14 +106,59 @@ const fixMessages = (
   svgElement
     .querySelectorAll<SVGLineElement>(`[${LINE_NUMBER_ATTRIBUTE_NAME}]`)
     .forEach((lineElement) => {
-      lineElement.classList.add('dark:!stroke-slate-400', '!stroke-gray-600');
-
+      const arrowLength = 12;
+      const arrowWidth = 8;
       const defaultOpacity = '0';
       const messageNumber = lineElement.getAttribute(
         LINE_NUMBER_ATTRIBUTE_NAME
       )!;
 
       const interaction = interactions[Number(messageNumber) - 1];
+
+      const showErrorLine =
+        interaction.method === 'rejected' && interaction.type === 'notify';
+
+      lineElement.classList.add(
+        ...(showErrorLine
+          ? ['!stroke-no']
+          : ['dark:!stroke-slate-400', '!stroke-gray-600'])
+      );
+
+      const x1 = parseFloat(lineElement.getAttribute('x1')!);
+      const x2 = parseFloat(lineElement.getAttribute('x2')!);
+      const y1 = parseFloat(lineElement.getAttribute('y1')!);
+      const y2 = parseFloat(lineElement.getAttribute('y2')!);
+
+      const dx = x2 - x1;
+      const dy = y2 - y1;
+      const magnitude = Math.sqrt(dx * dx + dy * dy);
+      if (magnitude === 0) return;
+
+      const ux = dx / magnitude;
+      const uy = dy / magnitude;
+
+      const tipX = x1 - ux * arrowLength;
+      const tipY = y1 - uy * arrowLength;
+
+      const p1x = x1 - uy * (arrowWidth / 2);
+      const p1y = y1 + ux * (arrowWidth / 2);
+
+      const p2x = x1 + uy * (arrowWidth / 2);
+      const p2y = y1 - ux * (arrowWidth / 2);
+
+      const pathData = `M ${tipX} ${tipY} L ${p1x} ${p1y} L ${p2x} ${p2y} z`;
+
+      const arrowhead = document.createElementNS(SVG_NS, 'path');
+      arrowhead.setAttribute('d', pathData);
+      arrowhead.classList.add(
+        ...(showErrorLine
+          ? ['!fill-no']
+          : ['dark:!fill-slate-400', '!fill-gray-600'])
+      );
+
+      lineElement.insertAdjacentElement('beforebegin', arrowhead);
+      lineElement.removeAttribute('marker-end');
+
       if (!interaction?.crankNum) return;
 
       const horizontalPadding = 6;
@@ -180,7 +225,16 @@ const fixMessages = (
       )!;
 
       const toolTip = messageTooltipMap[messageNumber];
-      if (!toolTip) return;
+      if (toolTip) {
+        textElement.addEventListener(
+          'mouseenter',
+          () => (toolTip.style.opacity = '1')
+        );
+        textElement.addEventListener(
+          'mouseleave',
+          () => (toolTip.style.opacity = '0')
+        );
+      }
 
       const interaction = interactions[Number(messageNumber) - 1];
       const textContent = textElement.textContent;
@@ -193,21 +247,12 @@ const fixMessages = (
       const title = document.createElementNS(SVG_NS, 'title');
       try {
         title.textContent = JSON.stringify(
-          cleanJSON(JSON.parse(interaction.methargs))
+          cleanJSON(JSON.parse(interaction.methargs || interaction.body))
         );
       } catch {
-        title.textContent = interaction.methargs;
+        title.textContent = interaction.methargs || interaction.body;
       }
       textElement.appendChild(title);
-
-      textElement.addEventListener(
-        'mouseenter',
-        () => (toolTip.style.opacity = '1')
-      );
-      textElement.addEventListener(
-        'mouseleave',
-        () => (toolTip.style.opacity = '0')
-      );
     });
 
   svgElement

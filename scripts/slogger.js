@@ -27,6 +27,8 @@ import {
  * @typedef {Object} ConsensusParamValidator
  * @property {string[]} pub_key_types
  *
+ * @typedef {import('./types').KernelDeliveryObject} KernelDeliveryObject
+ *
  * @typedef {object} NodeInfo
  * @property {ProtocolVersion} protocol_version - The protocol versions.
  * @property {string} id - The node ID.
@@ -337,10 +339,11 @@ export const makeSlogSender = async (options) => {
         'run.trigger.txHash': triggerTxHash,
         'run.trigger.type': runTriggerType,
       },
-      body: { crankNum, kd, ksc, name, phase, type, usedBeans, vatID },
+      body: { crankNum, kd: _kd, ksc, name, phase, type, usedBeans, vatID },
       time,
     } = contextualSlog;
 
+    const kd = /** @type {KernelDeliveryObject} */ (_kd);
     const runId = _runId || NOT_AVAILABLE_DATA_PLACEHOLDER;
 
     switch (slog.type) {
@@ -529,11 +532,12 @@ export const makeSlogSender = async (options) => {
           }
           case 'notify': {
             const [, resolutions] = kd;
-            for (const [kpid, { state = 'unknown' }] of resolutions) {
+            for (const [kpid, { data, state = 'unknown' }] of resolutions) {
               addPromisesToChain(async () => {
                 await session.run(
                   `CREATE (
                       notify:Notify {
+                        body: $body,
                         blockHeight: $blockHeight,
                         elapsed: $elapsed,
                         kpid: $kpid,
@@ -549,6 +553,7 @@ export const makeSlogSender = async (options) => {
                       :CALL
                     ]->(vat)`,
                   prepareParams({
+                    body: data.body,
                     blockHeight: currentBlockHeight,
                     elapsed: time - lastBlockTime,
                     kpid,

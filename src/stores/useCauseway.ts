@@ -18,6 +18,7 @@ export type Filters = Partial<{
 export type Interaction = {
   argSize: number;
   blockHeight: number;
+  body: string;
   crankNum: number;
   elapsed: number;
   method: string;
